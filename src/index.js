@@ -26,12 +26,8 @@ function senhaDoPedido(req) {
 
 export default {
   async fetch(req, env) {
-    if (!env.SENHA) {
-      return new Response(
-        "O site está protegido, mas a senha ainda não foi definida. No Cloudflare, crie o segredo SENHA nas configurações deste worker.",
-        { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } }
-      );
-    }
+    // Enquanto o segredo SENHA não for criado no Cloudflare, o site abre sem senha.
+    if (!env.SENHA) return env.ASSETS.fetch(req);
     const enviada = senhaDoPedido(req);
     if (enviada === null || !(await iguais(enviada, env.SENHA))) {
       return new Response("Senha necessária.", {
