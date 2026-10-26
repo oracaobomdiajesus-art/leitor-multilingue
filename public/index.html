@@ -115,6 +115,13 @@ body.modo-aula .pag { display: none; }
 .vozes .linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .vozes .linha b { min-width: 76px; font-weight: 600; }
 .vozes select.sel { flex: 1 1 220px; max-width: 420px; height: 34px; }
+.grav-tempo { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
+#grav-btn.gravando, #btn-grav.gravando { background: #b3261e; border-color: #b3261e; color: #fff; }
+.grav-lista { display: flex; flex-direction: column; gap: 8px; }
+.grav-item { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg); }
+.grav-cab { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grav-acoes { margin-left: auto; display: flex; gap: 6px; }
+.grav-item audio { width: 100%; }
 .vozes .dica { color: var(--muted); font-size: 12px; line-height: 1.45; }
 #preparo { position: fixed; left: 0; top: 0; width: 640px; transform: scale(.05); transform-origin: 0 0; opacity: .02; pointer-events: none; z-index: -1; font-size: 16px; }
 #alternar[aria-pressed="true"], #btn-vozes[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -203,6 +210,7 @@ body.modo-aula .pag { display: none; }
         <button class="ico" id="menor" type="button" aria-label="Diminuir letra">A−</button>
         <button class="ico" id="maior" type="button" aria-label="Aumentar letra">A+</button>
         <button class="ico" id="alternar" type="button" aria-pressed="false" title="Leitura alternada" aria-label="Leitura alternada entre os idiomas">🔁</button>
+        <button class="ico" id="btn-grav" type="button" aria-pressed="false" title="Gravar minha voz" aria-label="Gravar minha voz lendo o texto">🎙</button>
         <button class="ico" id="btn-vozes" type="button" aria-pressed="false" title="Vozes e velocidade" aria-label="Vozes e velocidade">🗣</button>
         <button class="ico" id="btn-avisos" type="button" aria-pressed="true" title="Avisos" aria-label="Mostrar ou ocultar avisos">💬</button>
         <a href="gramatica.html" class="ico" title="Biblioteca de gramática" aria-label="Biblioteca de gramática">📚</a>
@@ -219,6 +227,7 @@ body.modo-aula .pag { display: none; }
         <span><b>⇅</b> rolagem junta (liga/desliga)</span>
         <span><b>A− A+</b> tamanho da letra</span>
         <span><b>🔁</b> leitura alternada: cada parágrafo em todos os idiomas, depois o próximo</span>
+        <span><b>🎙</b> gravar a sua voz lendo o texto e guardar as gravações</span>
         <span><b>🗣</b> vozes, velocidade por idioma e quantas páginas o ⏬ traz</span>
         <span><b>💬</b> mostrar/ocultar a linha de avisos</span>
         <span><b>📚</b> biblioteca de gramática (português, inglês, espanhol)</span>
@@ -241,6 +250,7 @@ body.modo-aula .pag { display: none; }
       </div>
     </div>
     <div class="vozes" id="painel-vozes" hidden></div>
+    <div class="vozes" id="painel-grav" hidden></div>
     <div class="status" id="status" hidden><span id="status-txt"></span><button class="fechar" id="fechar-avisos" type="button" title="Ocultar avisos" aria-label="Ocultar avisos">✕</button></div>
 
     <div class="janelas">
@@ -478,7 +488,7 @@ body.modo-aula .pag { display: none; }
         var au = l.fonte ? await carregarAula(l.fonte) : ((await carregarAula()) || aulaAtual);
         if (!au) throw new Error(l.fonte ? "a oração não está disponível agora" : "a aula não está disponível agora");
         if (!l.fonte) aulaAtual = au;
-        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, aula: true, dados: { titulo: au.titulo } };
+        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo } };
         $("nome-livro").textContent = (l.fonte ? "🙏 " : "🎓 ") + (au.titulo || "Aula");
         pdf = { aula: true, paras: au.paragrafos, numPages: 1 };
         definirIdiomaOriginal("pt");
@@ -1399,6 +1409,8 @@ body.modo-aula .pag { display: none; }
   $("num").addEventListener("change", function () { irPara(parseInt(this.value, 10) || 1); });
   $("voltar").addEventListener("click", function () {
     pararAudio();
+    pararGravacao();
+    $("painel-grav").hidden = true; $("btn-grav").setAttribute("aria-pressed", "false");
     salvarProgresso(true);
     $("tela-leitor").hidden = true;
     $("tela-estante").hidden = false;
@@ -1421,8 +1433,11 @@ body.modo-aula .pag { display: none; }
   // ---------- Armazenamento no aparelho ----------
   function abrirIdb() {
     return new Promise(function (ok, erro) {
-      var r = indexedDB.open("leitor-bilingue", 1);
-      r.onupgradeneeded = function () { r.result.createObjectStore("pdfs"); r.result.createObjectStore("traducoes"); };
+      var r = indexedDB.open("leitor-bilingue", 2);
+      r.onupgradeneeded = function () {
+        var db = r.result;
+        ["pdfs", "traducoes", "gravacoes"].forEach(function (n) { if (!db.objectStoreNames.contains(n)) db.createObjectStore(n); });
+      };
       r.onsuccess = function () { ok(r.result); };
       r.onerror = function () { erro(r.error); };
     });
@@ -1445,6 +1460,140 @@ body.modo-aula .pag { display: none; }
       r.onsuccess = function () { ok(r.result); }; r.onerror = function () { erro(r.error); };
     });
   }
+  // ---------- Gravação da própria voz ----------
+  var grav = { rec: null, stream: null, partes: [], inicio: 0, timer: null, lock: null, urls: [], apagar: null };
+  function chaveGrav() { return atual ? (atual.chave || atual.id) : "geral"; }
+  function tipoAudio() {
+    var ts = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (var i = 0; i < ts.length; i++) {
+      try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(ts[i])) return ts[i]; } catch (e) {}
+    }
+    return "";
+  }
+  function extDe(m) { return /mp4/.test(m || "") ? "m4a" : /ogg/.test(m || "") ? "ogg" : "webm"; }
+  function fmtDur(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function nomeArquivo(g) {
+    var base = String(g.titulo || "gravacao").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "gravacao";
+    var d = new Date(g.criadoEm), p = function (n) { return String(n).padStart(2, "0"); };
+    return base + "-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + "." + extDe(g.mime);
+  }
+  function gravacoesDe(chave) {
+    return new Promise(function (ok, erro) {
+      if (!idb || !idb.objectStoreNames.contains("gravacoes")) { ok([]); return; }
+      var lista = [], r = idb.transaction("gravacoes", "readonly").objectStore("gravacoes").openCursor();
+      r.onsuccess = function () {
+        var c = r.result;
+        if (!c) { ok(lista.sort(function (a, b) { return a.v.criadoEm < b.v.criadoEm ? 1 : -1; })); return; }
+        if (c.value && c.value.livro === chave) lista.push({ k: c.key, v: c.value });
+        c.continue();
+      };
+      r.onerror = function () { erro(r.error); };
+    });
+  }
+  function msgGrav(t) { var m = $("grav-msg"); if (m) m.textContent = t || ""; }
+  function montarPainelGrav() {
+    $("painel-grav").innerHTML =
+      '<div class="linha"><b>Minha voz</b><button class="btn primario" type="button" id="grav-btn">● Gravar</button>' +
+      '<span id="grav-tempo" class="grav-tempo">0:00</span><span class="dica" id="grav-msg"></span></div>' +
+      '<div class="dica">Leia o texto em voz alta enquanto grava. A gravação fica guardada neste aparelho, ligada a este texto. Use ⬇ para salvar o arquivo ou ↗ para mandar para o Drive ou o WhatsApp.</div>' +
+      '<div id="grav-lista" class="grav-lista"></div>';
+    atualizarBtnGrav();
+    listarGravacoes();
+  }
+  function atualizarBtnGrav() {
+    var b = $("grav-btn"); if (!b) return;
+    var on = grav.rec && grav.rec.state === "recording";
+    b.textContent = on ? "■ Parar e salvar" : "● Gravar";
+    b.classList.toggle("gravando", !!on);
+    $("btn-grav").classList.toggle("gravando", !!on);
+  }
+  async function listarGravacoes() {
+    var el = $("grav-lista"); if (!el) return;
+    grav.urls.forEach(function (u) { URL.revokeObjectURL(u); }); grav.urls = [];
+    var lista = [];
+    try { lista = await gravacoesDe(chaveGrav()); } catch (e) {}
+    if (!lista.length) { el.innerHTML = '<div class="dica">Nenhuma gravação deste texto ainda.</div>'; return; }
+    el.innerHTML = lista.map(function (x, i) {
+      var g = x.v, url = URL.createObjectURL(g.blob); grav.urls.push(url);
+      var d = new Date(g.criadoEm);
+      return '<div class="grav-item"><div class="grav-cab"><b>Gravação ' + (lista.length - i) + '</b><span class="dica">' +
+        d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " · " + fmtDur(g.duracao || 0) + '</span>' +
+        '<span class="grav-acoes"><button class="ico" type="button" data-grav-baixar="' + x.k + '" title="Salvar arquivo" aria-label="Salvar arquivo">⬇</button>' +
+        (navigator.share ? '<button class="ico" type="button" data-grav-enviar="' + x.k + '" title="Enviar" aria-label="Enviar para outro app">↗</button>' : "") +
+        '<button class="ico" type="button" data-grav-apagar="' + x.k + '" title="Apagar" aria-label="Apagar gravação">' + (grav.apagar === x.k ? "Apagar?" : "🗑") + '</button></span></div>' +
+        '<audio controls preload="metadata" src="' + url + '"></audio></div>';
+    }).join("");
+  }
+  async function iniciarGravacao() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { msgGrav("Este navegador não grava áudio. Use o Chrome."); return; }
+    if (!idb || !idb.objectStoreNames.contains("gravacoes")) { msgGrav("Não consigo guardar gravações neste navegador (modo anônimo?)."); return; }
+    try { pararAudio(); } catch (e) {}
+    try {
+      grav.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      msgGrav(e && e.name === "NotAllowedError" ? "O microfone foi bloqueado. Toque no cadeado ao lado do endereço → Permissões → Microfone → Permitir." : "Não consegui abrir o microfone (" + (e && e.name || e) + ").");
+      return;
+    }
+    var mime = tipoAudio();
+    grav.partes = [];
+    grav.chave = chaveGrav(); grav.titulo = atual && atual.dados ? atual.dados.titulo : "";
+    grav.rec = new MediaRecorder(grav.stream, mime ? { mimeType: mime } : undefined);
+    grav.rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) grav.partes.push(ev.data); };
+    grav.rec.onstop = salvarGravacao;
+    grav.rec.start(1000);
+    grav.inicio = Date.now();
+    grav.timer = setInterval(function () { var t = $("grav-tempo"); if (t) t.textContent = fmtDur((Date.now() - grav.inicio) / 1000); }, 500);
+    try { if (navigator.wakeLock) grav.lock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    msgGrav("Gravando… leia no seu ritmo.");
+    atualizarBtnGrav();
+  }
+  function pararGravacao() { if (grav.rec && grav.rec.state !== "inactive") grav.rec.stop(); }
+  async function salvarGravacao() {
+    clearInterval(grav.timer);
+    var dur = (Date.now() - grav.inicio) / 1000;
+    if (grav.stream) grav.stream.getTracks().forEach(function (t) { t.stop(); });
+    try { if (grav.lock) await grav.lock.release(); } catch (e) {}
+    grav.lock = null;
+    var mime = (grav.rec && grav.rec.mimeType) || tipoAudio() || "audio/webm";
+    var blob = new Blob(grav.partes, { type: mime.split(";")[0] });
+    grav.rec = null; grav.stream = null; grav.partes = [];
+    atualizarBtnGrav();
+    if (!blob.size) { msgGrav("A gravação ficou vazia. Tente de novo."); return; }
+    try {
+      await idbPut("gravacoes", "g" + Date.now().toString(36), { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob });
+      msgGrav("Gravação salva (" + fmtDur(dur) + ").");
+    } catch (e) { msgGrav("Não consegui salvar a gravação (" + (e && e.message || e) + ")."); }
+    listarGravacoes();
+  }
+  $("btn-grav").addEventListener("click", function () {
+    var abrir = $("painel-grav").hidden;
+    if (abrir) montarPainelGrav();
+    $("painel-grav").hidden = !abrir;
+    this.setAttribute("aria-pressed", abrir ? "true" : "false");
+    if (typeof agendarAlinhar === "function") agendarAlinhar();
+  });
+  $("painel-grav").addEventListener("click", async function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    if (b.id === "grav-btn") { if (grav.rec && grav.rec.state === "recording") pararGravacao(); else iniciarGravacao(); return; }
+    var k = b.dataset.gravBaixar || b.dataset.gravEnviar || b.dataset.gravApagar; if (!k) return;
+    var g = await idbGet("gravacoes", k); if (!g) return;
+    if (b.dataset.gravBaixar) {
+      var a = document.createElement("a"), u = URL.createObjectURL(g.blob);
+      a.href = u; a.download = nomeArquivo(g); document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    } else if (b.dataset.gravEnviar) {
+      var f = new File([g.blob], nomeArquivo(g), { type: g.blob.type });
+      try {
+        if (navigator.canShare && !navigator.canShare({ files: [f] })) throw new Error("sem suporte");
+        await navigator.share({ files: [f], title: g.titulo || "Gravação" });
+      } catch (e) { if (!e || e.name !== "AbortError") msgGrav("Este aparelho não deixou enviar o arquivo. Use ⬇ para salvar."); }
+    } else if (b.dataset.gravApagar) {
+      if (grav.apagar === k) { await idbDel("gravacoes", k); grav.apagar = null; msgGrav("Gravação apagada."); }
+      else grav.apagar = k;
+      listarGravacoes();
+    }
+  });
+
   function gravarLivros() { gravarPref("leitor.livros", JSON.stringify(livros)); renderEstante(); }
 
   async function iniciar() {
