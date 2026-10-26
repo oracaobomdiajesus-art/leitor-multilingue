@@ -121,6 +121,8 @@ body.modo-aula .pag { display: none; }
 .grav-item { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg); }
 .grav-cab { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .grav-acoes { margin-left: auto; display: flex; gap: 6px; }
+.grav-nome { display: flex; gap: 6px; flex: 1 1 240px; min-width: 0; }
+.grav-nome input { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: var(--paper); }
 .grav-item audio { width: 100%; }
 .vozes .dica { color: var(--muted); font-size: 12px; line-height: 1.45; }
 #preparo { position: fixed; left: 0; top: 0; width: 640px; transform: scale(.05); transform-origin: 0 0; opacity: .02; pointer-events: none; z-index: -1; font-size: 16px; }
@@ -1461,7 +1463,7 @@ body.modo-aula .pag { display: none; }
     });
   }
   // ---------- Gravação da própria voz ----------
-  var grav = { rec: null, stream: null, partes: [], inicio: 0, timer: null, lock: null, urls: [], apagar: null };
+  var grav = { rec: null, stream: null, partes: [], inicio: 0, timer: null, lock: null, urls: [], apagar: null, editando: null };
   function chaveGrav() { return atual ? (atual.chave || atual.id) : "geral"; }
   function tipoAudio() {
     var ts = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
@@ -1473,7 +1475,7 @@ body.modo-aula .pag { display: none; }
   function extDe(m) { return /mp4/.test(m || "") ? "m4a" : /ogg/.test(m || "") ? "ogg" : "webm"; }
   function fmtDur(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
   function nomeArquivo(g) {
-    var base = String(g.titulo || "gravacao").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "gravacao";
+    var base = String(g.nome || g.titulo || "gravacao").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "gravacao";
     var d = new Date(g.criadoEm), p = function (n) { return String(n).padStart(2, "0"); };
     return base + "-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + "." + extDe(g.mime);
   }
@@ -1516,13 +1518,18 @@ body.modo-aula .pag { display: none; }
     el.innerHTML = lista.map(function (x, i) {
       var g = x.v, url = URL.createObjectURL(g.blob); grav.urls.push(url);
       var d = new Date(g.criadoEm);
-      return '<div class="grav-item"><div class="grav-cab"><b>Gravação ' + (lista.length - i) + '</b><span class="dica">' +
+      var nome = g.nome || ("Gravação " + (lista.length - i));
+      var cab = grav.editando === x.k
+        ? '<form class="grav-nome" data-grav-form="' + x.k + '"><input type="text" name="nome" maxlength="80" value="' + escapar(g.nome || "") + '" placeholder="' + escapar(nome) + '" aria-label="Nome da gravação"><button class="ico" type="submit">Salvar</button><button class="ico" type="button" data-grav-cancelar="1">Cancelar</button></form>'
+        : '<b>' + escapar(nome) + '</b><button class="ico" type="button" data-grav-renomear="' + x.k + '" title="Renomear" aria-label="Renomear gravação">✏</button>';
+      return '<div class="grav-item"><div class="grav-cab">' + cab + '<span class="dica">' +
         d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " · " + fmtDur(g.duracao || 0) + '</span>' +
         '<span class="grav-acoes"><button class="ico" type="button" data-grav-baixar="' + x.k + '" title="Salvar arquivo" aria-label="Salvar arquivo">⬇</button>' +
         (navigator.share ? '<button class="ico" type="button" data-grav-enviar="' + x.k + '" title="Enviar" aria-label="Enviar para outro app">↗</button>' : "") +
         '<button class="ico" type="button" data-grav-apagar="' + x.k + '" title="Apagar" aria-label="Apagar gravação">' + (grav.apagar === x.k ? "Apagar?" : "🗑") + '</button></span></div>' +
         '<audio controls preload="metadata" src="' + url + '"></audio></div>';
     }).join("");
+    var inp = el.querySelector(".grav-nome input"); if (inp) inp.focus();
   }
   async function iniciarGravacao() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { msgGrav("Este navegador não grava áudio. Use o Chrome."); return; }
@@ -1560,11 +1567,20 @@ body.modo-aula .pag { display: none; }
     atualizarBtnGrav();
     if (!blob.size) { msgGrav("A gravação ficou vazia. Tente de novo."); return; }
     try {
-      await idbPut("gravacoes", "g" + Date.now().toString(36), { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob });
-      msgGrav("Gravação salva (" + fmtDur(dur) + ").");
+      var novaChave = "g" + Date.now().toString(36);
+      grav.editando = novaChave;
+      await idbPut("gravacoes", novaChave, { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob });
+      msgGrav("Gravação salva (" + fmtDur(dur) + "). Dê um nome a ela, se quiser.");
     } catch (e) { msgGrav("Não consegui salvar a gravação (" + (e && e.message || e) + ")."); }
     listarGravacoes();
   }
+  $("painel-grav").addEventListener("submit", async function (ev) {
+    var f = ev.target.closest("form[data-grav-form]"); if (!f) return;
+    ev.preventDefault();
+    var k = f.dataset.gravForm, g = await idbGet("gravacoes", k);
+    if (g) { g.nome = f.nome.value.trim(); await idbPut("gravacoes", k, g); msgGrav(g.nome ? "Nome salvo." : "Nome removido."); }
+    grav.editando = null; listarGravacoes();
+  });
   $("btn-grav").addEventListener("click", function () {
     var abrir = $("painel-grav").hidden;
     if (abrir) montarPainelGrav();
@@ -1575,6 +1591,8 @@ body.modo-aula .pag { display: none; }
   $("painel-grav").addEventListener("click", async function (ev) {
     var b = ev.target.closest("button"); if (!b) return;
     if (b.id === "grav-btn") { if (grav.rec && grav.rec.state === "recording") pararGravacao(); else iniciarGravacao(); return; }
+    if (b.dataset.gravRenomear) { grav.editando = b.dataset.gravRenomear; listarGravacoes(); return; }
+    if (b.dataset.gravCancelar) { grav.editando = null; listarGravacoes(); return; }
     var k = b.dataset.gravBaixar || b.dataset.gravEnviar || b.dataset.gravApagar; if (!k) return;
     var g = await idbGet("gravacoes", k); if (!g) return;
     if (b.dataset.gravBaixar) {
