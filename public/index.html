@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Leitor Multilíngue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: estante (lista de livros) -> leitor com barra fixa e duas janelas de texto lado a lado, cada uma com rolagem propria; empilhadas no celular */
+:root {
+  --bg: #f3f4f1;
+  --paper: #fcfcfa;
+  --ink: #23201f;
+  --muted: #6e6a66;
+  --line: #dddcd6;
+  --accent: #8e2f4b;       /* rosa-vinho da rosa da Fera */
+  --accent-soft: #f3e3e8;
+  --ok: #2f6b45;
+  --warn: #8a5a12;
+  --hl: #f7ecc6;
+  --font-read: "Literata", Georgia, "Times New Roman", serif;
+  --font-ui: "Figtree", "Segoe UI", Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161517; --paper: #1f1d20; --ink: #ece8e3; --muted: #a39d98; --line: #36323a;
+    --accent: #e08aa4; --accent-soft: #3a2530; --ok: #7fc79a; --warn: #e2b565; --hl: #4a4020;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161517; --paper: #1f1d20; --ink: #ece8e3; --muted: #a39d98; --line: #36323a;
+  --accent: #e08aa4; --accent-soft: #3a2530; --ok: #7fc79a; --warn: #e2b565; --hl: #4a4020;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: flex; flex-direction: column; }
+
+/* ---------- Estante ---------- */
+.estante { max-width: 760px; width: 100%; margin: 0 auto; padding-inline: 16px; padding-block: 28px 40px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.estante h1 { font-family: var(--font-read); font-weight: 600; font-size: 28px; margin: 0; text-wrap: balance; }
+.estante .sub { color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+.acoes-estante { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 9px 14px; font-weight: 600; font-size: 14px; }
+.btn.primario { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.btn:disabled, .btn.ocupado { opacity: .55; cursor: default; pointer-events: none; }
+.seletor { position: relative; overflow: hidden; display: inline-block; cursor: pointer; }
+.seletor input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; }
+.livros { display: flex; flex-direction: column; gap: 10px; }
+.livro { display: flex; gap: 14px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px; text-align: left; width: 100%; }
+.livro .lombada { width: 8px; align-self: stretch; border-radius: 4px; background: var(--accent); flex: none; }
+.livro .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.livro .titulo { font-family: var(--font-read); font-weight: 600; font-size: 17px; }
+.livro .meta { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.barra { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.barra > i { display: block; height: 100%; background: var(--accent); }
+.vazio { background: var(--paper); border: 1px dashed var(--line); border-radius: 10px; padding: 22px; line-height: 1.6; color: var(--muted); }
+.vazio b { color: var(--ink); }
+.aviso { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); line-height: 1.5; }
+.aviso.erro { color: var(--accent); }
+
+/* ---------- Leitor ---------- */
+.topo { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--paper); }
+.topo .nome { font-family: var(--font-read); font-weight: 600; font-size: 16px; min-width: 0; flex: 1 1 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grupo { display: flex; gap: 6px; align-items: center; }
+.ico { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; min-width: 36px; height: 36px; padding: 0 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.pag { font-variant-numeric: tabular-nums; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+.pag input { width: 58px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); text-align: center; }
+select.sel { height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 0 8px; }
+.status { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 6px 8px 6px 16px; font-size: 12.5px; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line); line-height: 1.45; }
+.status.ok { color: var(--ok); }
+.status #status-txt { flex: 1; min-width: 0; }
+.status .fechar { border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; padding: 2px 6px; cursor: pointer; }
+#btn-avisos[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.status.warn { color: var(--warn); }
+
+.janelas { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; }
+.janela { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+.janela:last-child { border-right: 0; }
+.jcab { min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--paper); }
+.jcab .grupo button { text-transform: none; letter-spacing: 0; font-size: 12.5px; height: 30px; }
+.texto { position: relative; flex: 1; overflow-y: auto; padding-inline: 20px; padding-block: 18px 60px; background: var(--paper); font-family: var(--font-read); font-size: var(--tam, 18px); line-height: 1.7; }
+#sync[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.texto p { margin: 0 0 1em; max-width: 64ch; }
+.texto p { cursor: pointer; border-left: 3px solid transparent; padding-left: 8px; margin-left: -11px; }
+.texto p.falando { background: var(--hl); border-radius: 4px; }
+.texto p.inicio { border-left-color: var(--accent); }
+.texto .nada { font-family: var(--font-ui); color: var(--muted); font-size: 14px; }
+.janelas.tres { grid-template-columns: 1fr 1fr 1fr; }
+.jcab .grupo { gap: 4px; }
+.texto sup.vn { font-family: var(--font-ui); font-size: .62em; font-weight: 700; color: var(--accent); margin-right: 4px; vertical-align: super; }
+.bib select.sel { max-width: 150px; }
+body.modo-biblia #num, body.modo-biblia #total { display: none; }
+body.modo-aula .pag { display: none; }
+.livro.aula .lombada { background: var(--accent); }
+.livro.oracao .lombada { background: var(--ok); }
+.grupo-oracoes { display: flex; flex-direction: column; gap: 8px; }
+.rotulo-estante { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.jcab .grupo button.ico { min-width: 32px; padding: 0 6px; font-size: 15px; }
+#ajuda[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.legenda { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 16px; font-size: 12.5px; color: var(--muted); background: var(--paper); border-bottom: 1px solid var(--line); line-height: 1.5; }
+.legenda span { white-space: nowrap; }
+.legenda { flex-direction: column; }
+.lg-grupo { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.lg-grupo > i { font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); min-width: 72px; }
+.vozes { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; font-size: 13px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.vozes .linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.vozes .linha b { min-width: 76px; font-weight: 600; }
+.vozes select.sel { flex: 1 1 220px; max-width: 420px; height: 34px; }
+.vozes .dica { color: var(--muted); font-size: 12px; line-height: 1.45; }
+#preparo { position: fixed; left: 0; top: 0; width: 640px; transform: scale(.05); transform-origin: 0 0; opacity: .02; pointer-events: none; z-index: -1; font-size: 16px; }
+#alternar[aria-pressed="true"], #btn-vozes[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.legenda b { color: var(--ink); font-weight: 600; display: inline-block; min-width: 1.2em; text-align: center; }
+#col3[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.jcab.col3 { flex-wrap: nowrap; padding: 8px 8px; gap: 4px; }
+.jcab.col3 select.sel { flex: 1 1 auto; min-width: 54px; max-width: 92px; padding: 0 2px; }
+.jcab.col3 .grupo { flex: 0 0 auto; }
+.jcab.col3 .grupo button.ico { min-width: 30px; padding: 0 4px; }
+.jcab select.sel { height: 30px; font-size: 12.5px; text-transform: none; letter-spacing: 0; }
+.colar { display: flex; flex-direction: column; gap: 8px; font-family: var(--font-ui); }
+.colar textarea { width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; font-size: 15px; background: var(--bg); color: var(--ink); }
+.colar .grupo { justify-content: flex-end; }
+
+@media (max-width: 720px) {
+  .topo { padding: 8px 12px; gap: 6px 8px; }
+  .topo .ico { min-width: 34px; padding: 0 8px; }
+  body.modo-biblia .topo .nome { display: none; }
+  .topo .nome { flex: 1 1 0; font-size: 15px; }
+  .pag { gap: 4px; }
+  .pag input { width: 46px; }
+  .bib select.sel { max-width: 120px; }
+  .janelas { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .janelas.tres { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; }
+  .janela { border-right: 0; border-bottom: 1px solid var(--line); }
+  .texto { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<style>*{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="app" id="app" translate="no">
+
+  <!-- ESTANTE -->
+  <section class="estante" id="tela-estante">
+    <div>
+      <h1>Leitor Multilíngue</h1>
+      <p class="sub">Seus PDFs e orações com o original de um lado e a tradução do navegador do outro, em vários idiomas. O PDF e a página onde você parou ficam salvos neste aparelho.</p>
+    </div>
+    <div class="acoes-estante">
+      <label class="btn primario seletor" id="btn-add" for="arquivo">Adicionar arquivo
+        <input type="file" id="arquivo" accept="application/pdf,.pdf,.csv,text/csv,.json,application/json"></label>
+      <span class="sub" id="upload-msg"></span>
+    </div>
+    <div id="lista" class="livros">
+      <div class="vazio">Carregando sua estante…</div>
+    </div>
+  </section>
+
+  <!-- LEITOR -->
+  <section id="tela-leitor" class="app" hidden>
+    <div class="topo">
+      <button class="ico" id="voltar" type="button" aria-label="Voltar para a estante">←</button>
+      <div class="nome" id="nome-livro"></div>
+      <div class="pag">
+        <button class="ico" id="ant" type="button" aria-label="Página anterior">‹</button>
+        <input id="num" type="number" min="1" inputmode="numeric" aria-label="Página">
+        <span id="total">/ –</span>
+        <button class="ico" id="prox" type="button" aria-label="Próxima página">›</button>
+      </div>
+      <div class="grupo bib" id="bib-nav" hidden>
+        <select id="bLivro" class="sel" aria-label="Livro"></select>
+        <select id="bCap" class="sel" aria-label="Capítulo"></select>
+      </div>
+      <div class="grupo" id="grupo-idioma">
+        <select id="idioma" class="sel" title="Idioma do tradutor embutido (só no computador)" aria-label="Idioma do tradutor embutido">
+          <option value="en">Inglês</option>
+          <option value="es">Espanhol</option>
+          <option value="fr">Francês</option>
+          <option value="it">Italiano</option>
+          <option value="de">Alemão</option>
+          <option value="nl">Holandês</option>
+          <option value="ru">Russo</option>
+          <option value="he">Hebraico</option>
+          <option value="ar">Árabe</option>
+          <option value="ja">Japonês</option>
+          <option value="zh">Chinês</option>
+          <option value="ko">Coreano</option>
+        </select>
+      </div>
+      <div class="grupo">
+        <button class="ico" id="col3" type="button" aria-pressed="false" title="3ª coluna" aria-label="3ª coluna">Ⅲ</button>
+        <button class="ico" id="sync" type="button" aria-pressed="true" title="Rolagem junta" aria-label="Rolagem junta">⇅</button>
+        <button class="ico" id="menor" type="button" aria-label="Diminuir letra">A−</button>
+        <button class="ico" id="maior" type="button" aria-label="Aumentar letra">A+</button>
+        <button class="ico" id="alternar" type="button" aria-pressed="false" title="Leitura alternada" aria-label="Leitura alternada entre os idiomas">🔁</button>
+        <button class="ico" id="btn-vozes" type="button" aria-pressed="false" title="Vozes e velocidade" aria-label="Vozes e velocidade">🗣</button>
+        <button class="ico" id="btn-avisos" type="button" aria-pressed="true" title="Avisos" aria-label="Mostrar ou ocultar avisos">💬</button>
+        <a href="gramatica.html" class="ico" title="Biblioteca de gramática" aria-label="Biblioteca de gramática">📚</a>
+        <button class="ico" id="ajuda" type="button" aria-pressed="false" title="Legenda dos botões" aria-label="Legenda dos botões">?</button>
+      </div>
+    </div>
+    <div class="legenda" id="legenda" hidden>
+      <div class="lg-grupo"><i>Topo</i>
+        <span><b>←</b> voltar à estante</span>
+        <span><b>‹ ›</b> página (ou capítulo) anterior / próxima</span>
+        <span><b>Livro · Cap.</b> escolher livro e capítulo (Bíblia)</span>
+        <span><b>Idioma</b> tradutor embutido (só no computador)</span>
+        <span><b>Ⅲ</b> mostrar/esconder a 3ª coluna</span>
+        <span><b>⇅</b> rolagem junta (liga/desliga)</span>
+        <span><b>A− A+</b> tamanho da letra</span>
+        <span><b>🔁</b> leitura alternada: cada parágrafo em todos os idiomas, depois o próximo</span>
+        <span><b>🗣</b> vozes, velocidade por idioma e quantas páginas o ⏬ traz</span>
+        <span><b>💬</b> mostrar/ocultar a linha de avisos</span>
+        <span><b>📚</b> biblioteca de gramática (português, inglês, espanhol)</span>
+        <span><b>?</b> mostrar/esconder esta legenda</span>
+      </div>
+      <div class="lg-grupo"><i>Colunas</i>
+        <span><b>▶</b> ouvir / continuar</span>
+        <span><b>⏸</b> pausar</span>
+        <span><b>■</b> parar</span>
+        <span><b>¶</b> tocar num parágrafo: marcar o início do áudio</span>
+        <span><b>🌐</b> baixar o tradutor (quando o Chrome pedir)</span>
+        <span><b>Traduzir</b> no Chrome: ⋮ → Traduzir… e escolha o idioma (só a coluna do meio muda)</span>
+      </div>
+      <div class="lg-grupo"><i>3ª coluna</i>
+        <span><b>Idioma</b> em que a voz lê esta coluna</span>
+        <span><b>📋</b> trazer a tradução da coluna do meio (esta página)</span>
+        <span><b>⏬</b> trazer esta página e as seguintes, 10 por padrão (as já lidas saem)</span>
+        <span><b>📥</b> colar um texto seu</span>
+        <span><b>🗑</b> limpar a coluna nesta página</span>
+      </div>
+    </div>
+    <div class="vozes" id="painel-vozes" hidden></div>
+    <div class="status" id="status" hidden><span id="status-txt"></span><button class="fechar" id="fechar-avisos" type="button" title="Ocultar avisos" aria-label="Ocultar avisos">✕</button></div>
+
+    <div class="janelas">
+      <div class="janela">
+        <div class="jcab">
+          <span id="rot-orig">Original · Português</span>
+          <div class="grupo">
+            <button class="ico" data-ouvir="orig" type="button" title="Ouvir" aria-label="Ouvir">▶</button>
+            <button class="ico" data-parar="orig" type="button" aria-label="Parar áudio" hidden>■</button>
+          </div>
+        </div>
+        <div class="texto" id="orig" lang="pt" translate="no"></div>
+      </div>
+      <div class="janela">
+        <div class="jcab">
+          <span id="rot-trad">Tradução</span>
+          <div class="grupo">
+            <button class="ico" id="traduzir" type="button" title="Traduzir página" aria-label="Traduzir página" hidden>🌐</button>
+            <button class="ico" data-ouvir="trad" type="button" title="Ouvir" aria-label="Ouvir">▶</button>
+            <button class="ico" data-parar="trad" type="button" aria-label="Parar áudio" hidden>■</button>
+          </div>
+        </div>
+        <div class="texto" id="trad" lang="pt" translate="yes"></div>
+      </div>
+      <div class="janela" id="janela-fixo" hidden>
+        <div class="jcab col3">
+          <select id="idioma3" class="sel" aria-label="Idioma do texto desta coluna">
+            <option value="en">Inglês</option>
+            <option value="es">Espanhol</option>
+            <option value="fr">Francês</option>
+            <option value="it">Italiano</option>
+            <option value="de">Alemão</option>
+            <option value="nl">Holandês</option>
+            <option value="ru">Russo</option>
+            <option value="he">Hebraico</option>
+            <option value="ar">Árabe</option>
+            <option value="ja">Japonês</option>
+            <option value="zh">Chinês</option>
+            <option value="ko">Coreano</option>
+            <option value="pt">Português</option>
+          </select>
+          <div class="grupo">
+            <button class="ico" id="trazer" type="button" title="Trazer tradução" aria-label="Trazer a tradução da coluna do meio">📋</button>
+            <button class="ico" id="guardar" type="button" title="Trazer várias páginas" aria-label="Trazer a tradução desta página e das seguintes para a 3ª coluna">⏬</button>
+            <button class="ico" id="colar" type="button" title="Colar" aria-label="Colar um texto seu">📥</button>
+            <button class="ico" id="limpar3" type="button" aria-label="Limpar esta coluna">🗑</button>
+            <button class="ico" data-ouvir="fixo" type="button" title="Ouvir" aria-label="Ouvir">▶</button>
+            <button class="ico" data-parar="fixo" type="button" aria-label="Parar áudio" hidden>■</button>
+          </div>
+        </div>
+        <div class="texto" id="fixo" lang="en" translate="no"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  var VOZ_LANG = { pt: "pt-BR", en: "en-US", es: "es-ES", fr: "fr-FR", it: "it-IT", de: "de-DE", nl: "nl-NL", ru: "ru-RU", he: "he-IL", ar: "ar-SA", ja: "ja-JP", zh: "zh-CN", ko: "ko-KR" };
+  var NOME_LANG = { en: "Inglês", es: "Espanhol", fr: "Francês", it: "Italiano", de: "Alemão", nl: "Holandês", ru: "Russo", he: "Hebraico", ar: "Árabe", ja: "Japonês", zh: "Chinês", ko: "Coreano" };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var idb = null;
+  var livros = [];               // docs da colecao "livros"
+  var atual = null;              // {id, dados}
+  var pdf = null, pagina = 1, paginasTexto = {};
+  var tradutor = null, tradutorLang = null, nativoDisponivel = false;
+  var salvarTimer = null;
+  var origLang = "pt";
+  var NOME_LANG_PT = { pt: "Português", en: "Inglês", es: "Espanhol", fr: "Francês", it: "Italiano", de: "Alemão", nl: "Holandês", ru: "Russo", he: "Hebraico", ar: "Árabe", ja: "Japonês", zh: "Chinês", ko: "Coreano" };
+
+  // ---------- pdf.js worker via blob ----------
+  try {
+    var wb = new Blob(['importScripts("' + WORKER_URL + '");'], { type: "application/javascript" });
+    pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(URL.createObjectURL(wb));
+  } catch (e) {
+    try { pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URL; } catch (e2) {}
+  }
+
+  function escapar(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  // Avisos: linha dinamica abaixo do topo. Pode ser ocultada (preferencia salva).
+  var avisosLigados = lerPref("leitor.avisos", "1") === "1";
+  function setStatus(msg, tipo) {
+    var s = $("status");
+    $("status-txt").textContent = msg || "";
+    s.className = "status" + (tipo ? " " + tipo : "");
+    s.hidden = !avisosLigados || !msg;
+  }
+  function aplicarAvisos() {
+    $("btn-avisos").setAttribute("aria-pressed", avisosLigados ? "true" : "false");
+    $("btn-avisos").title = avisosLigados ? "Ocultar avisos" : "Mostrar avisos";
+    $("status").hidden = !avisosLigados || !$("status-txt").textContent;
+    if (typeof agendarAlinhar === "function") agendarAlinhar();
+  }
+  $("btn-avisos").addEventListener("click", function () {
+    avisosLigados = !avisosLigados;
+    gravarPref("leitor.avisos", avisosLigados ? "1" : "0");
+    aplicarAvisos();
+  });
+  $("fechar-avisos").addEventListener("click", function () {
+    avisosLigados = false;
+    gravarPref("leitor.avisos", "0");
+    aplicarAvisos();
+  });
+  aplicarAvisos();
+  function hoje() { return new Date().toISOString(); }
+  function dataCurta(iso) { try { return new Date(iso).toLocaleDateString("pt-BR"); } catch (e) { return ""; } }
+
+  function lerPref(k, def) { try { var v = localStorage.getItem(k); return v == null ? def : v; } catch (e) { return def; } }
+  function gravarPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  // ---------- Estante ----------
+  // ---------- Aula ao vivo (aula.json publicado no site) ----------
+  var aulaAtual = null;
+  async function carregarAula(url) {
+    try {
+      var r = await fetch(url || "aula.json", { cache: "no-store" });
+      if (!r.ok) return null;
+      var d = await r.json();
+      if (!d || !Array.isArray(d.paragrafos) || !d.paragrafos.length) return null;
+      return d;
+    } catch (e) { return null; }
+  }
+  function cartaoAula() {
+    if (!aulaAtual) return "";
+    return '<button class="livro aula" type="button" data-id="aula"><span class="lombada"></span>' +
+      '<span class="info"><span class="titulo">🎓 Aula ao vivo · ' + escapar(aulaAtual.titulo || "") + '</span>' +
+      '<span class="meta">' + (aulaAtual.data ? dataCurta(aulaAtual.data + "T12:00:00") + " · " : "") +
+      aulaAtual.paragrafos.length + " parágrafos</span></span></button>";
+  }
+
+  // ---------- Orações (oracoes/indice.json publicado no site) ----------
+  var oracoes = [], verOracoesAntigas = false;
+  async function carregarOracoes() {
+    try {
+      var r = await fetch("oracoes/indice.json", { cache: "no-store" });
+      if (!r.ok) return [];
+      var d = await r.json();
+      var lista = Array.isArray(d) ? d : (d && d.oracoes) || [];
+      return lista.filter(function (o) { return o && o.arquivo; }).sort(function (a, b) { return String(b.data || "").localeCompare(String(a.data || "")); });
+    } catch (e) { return []; }
+  }
+  function cartaoOracao(o) {
+    return '<button class="livro oracao" type="button" data-oracao="' + escapar(o.arquivo) + '"><span class="lombada"></span>' +
+      '<span class="info"><span class="titulo">🙏 ' + escapar(o.titulo || "Oração") + '</span>' +
+      '<span class="meta">' + (o.data ? dataCurta(o.data + "T12:00:00") : "") + (o.resumo ? " · " + escapar(o.resumo) : "") + '</span></span></button>';
+  }
+  function blocoOracoes() {
+    if (!oracoes.length) return "";
+    var antigas = oracoes.slice(1);
+    return '<div class="grupo-oracoes"><div class="rotulo-estante">Orações</div>' + cartaoOracao(oracoes[0]) +
+      (antigas.length ? '<button class="btn" type="button" id="ver-oracoes">' + (verOracoesAntigas ? "Esconder" : "Ver") + " orações anteriores (" + antigas.length + ")</button>" +
+        (verOracoesAntigas ? antigas.map(cartaoOracao).join("") : "") : "") + "</div>";
+  }
+
+  function renderEstante() {
+    var el = $("lista");
+    if (!idb) {
+      el.innerHTML = '<div class="vazio aviso erro">Este navegador não deixou guardar arquivos (modo anônimo?). Abra numa janela normal do Chrome.</div>';
+      return;
+    }
+    if (!livros.length) {
+      el.innerHTML = blocoOracoes() + cartaoAula() + '<div class="vazio"><b>Nenhum livro neste aparelho ainda.</b><br>Toque em <b>Adicionar arquivo</b> e escolha no aparelho ou no Google Drive: um <b>PDF</b> (livro) ou a <b>Bíblia em CSV/JSON</b> (colunas livro, capítulo, versículo, texto). O arquivo fica guardado só neste aparelho.</div>';
+      return;
+    }
+    el.innerHTML = blocoOracoes() + cartaoAula() + livros.map(function (l) {
+      var d = l.dados, tot = d.totalPaginas || 0, pg = d.paginaAtual || 1;
+      var pct = tot ? Math.round((pg / tot) * 100) : 0;
+      return '<button class="livro" type="button" data-id="' + escapar(l.id) + '">' +
+        '<span class="lombada"></span>' +
+        '<span class="info"><span class="titulo">' + escapar(d.titulo || "Sem título") + '</span>' +
+        '<span class="meta">' + (d.tipo === "biblia" ? "Capítulo " : "Página ") + pg + (tot ? " de " + tot + " · " + pct + "%" : "") +
+        (d.ultimaLeitura ? " · última leitura " + dataCurta(d.ultimaLeitura) : "") + '</span>' +
+        '<span class="barra"><i style="width:' + pct + '%"></i></span></span></button>';
+    }).join("");
+  }
+
+  $("lista").addEventListener("click", function (ev) {
+    if (ev.target.closest("#ver-oracoes")) { verOracoesAntigas = !verOracoesAntigas; renderEstante(); return; }
+    var b = ev.target.closest(".livro");
+    if (!b) return;
+    if (b.dataset.oracao) { var o = oracoes.find(function (x) { return x.arquivo === b.dataset.oracao; }) || {}; abrirLivro({ id: "aula", aula: true, fonte: "oracoes/" + b.dataset.oracao, dados: { titulo: o.titulo || "Oração" } }); return; }
+    if (b.dataset.id === "aula") { abrirLivro({ id: "aula", aula: true, dados: { titulo: aulaAtual ? aulaAtual.titulo : "Aula" } }); return; }
+    var l = livros.find(function (x) { return x.id === b.dataset.id; });
+    if (l) abrirLivro(l);
+  });
+
+  $("arquivo").addEventListener("change", async function () {
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f) return;
+    var msg = $("upload-msg");
+    $("btn-add").classList.add("ocupado");
+    msg.textContent = "Guardando " + f.name + " neste aparelho…";
+    try {
+      var id = "l" + Date.now().toString(36);
+      var ehTexto = /\.(csv|json)$/i.test(f.name) || /csv|json/.test(f.type || "");
+      var tipo = "pdf", total = 0;
+      if (ehTexto) {
+        var bib = lerBiblia(await f.text(), f.name);
+        await idbPut("pdfs", id, bib);
+        tipo = "biblia"; total = bib.caps.length;
+      } else {
+        await idbPut("pdfs", id, await f.arrayBuffer());
+      }
+      var titulo = f.name.replace(/\.(pdf|csv|json)$/i, "").replace(/^Cópia de\s+/i, "").replace(/\s+-\s+.*$/, "");
+      livros.push({ id: id, dados: { titulo: titulo, arquivo: f.name, tipo: tipo, paginaAtual: 1, totalPaginas: total, criadoEm: hoje(), ultimaLeitura: "" } });
+      gravarLivros();
+      renderEstante();
+      msg.textContent = "Pronto! " + titulo + " está na estante deste aparelho.";
+    } catch (e) {
+      msg.textContent = "Não consegui guardar o arquivo neste aparelho (" + (e && e.message ? e.message : e) + ").";
+    } finally {
+      $("btn-add").classList.remove("ocupado");
+    }
+  });
+
+  // ---------- Leitor ----------
+  async function abrirLivro(l) {
+    atual = l;
+    $("tela-estante").hidden = true;
+    $("tela-leitor").hidden = false;
+    $("nome-livro").textContent = l.dados.titulo || "";
+    $("orig").innerHTML = '<p class="nada">Abrindo…</p>';
+    $("trad").innerHTML = "";
+    paginasTexto = {};
+    pdf = null;
+    setStatus("Abrindo…");
+    try {
+      var buf = l.aula ? null : await idbGet("pdfs", l.id);
+      if (l.aula) {
+        var au = l.fonte ? await carregarAula(l.fonte) : ((await carregarAula()) || aulaAtual);
+        if (!au) throw new Error(l.fonte ? "a oração não está disponível agora" : "a aula não está disponível agora");
+        if (!l.fonte) aulaAtual = au;
+        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, aula: true, dados: { titulo: au.titulo } };
+        $("nome-livro").textContent = (l.fonte ? "🙏 " : "🎓 ") + (au.titulo || "Aula");
+        pdf = { aula: true, paras: au.paragrafos, numPages: 1 };
+        definirIdiomaOriginal("pt");
+      } else if (!buf) throw new Error("o arquivo não está mais neste aparelho");
+      else if (buf.tipo === "biblia") {
+        pdf = { biblia: true, caps: buf.caps, numPages: buf.caps.length };
+        definirIdiomaOriginal(buf.lang || "pt");
+        montarNavBiblia();
+      } else {
+        definirIdiomaOriginal("pt");
+        pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      }
+      document.body.classList.toggle("modo-biblia", !!pdf.biblia);
+      document.body.classList.toggle("modo-aula", !!pdf.aula);
+      $("bib-nav").hidden = !pdf.biblia;
+    } catch (e) {
+      setStatus("Não consegui abrir o PDF (" + (e && e.message ? e.message : e) + ").", "warn");
+      $("orig").innerHTML = '<p class="nada">O arquivo não abriu. Volte para a estante e adicione o PDF de novo.</p>';
+      return;
+    }
+    $("total").textContent = "/ " + pdf.numPages;
+    $("num").max = pdf.numPages;
+    if (pdf.aula) { await irPara(1); return; }
+    if (l.dados.totalPaginas !== pdf.numPages) salvarProgresso(true);
+    var ini = Math.min(Math.max(1, l.dados.paginaAtual || 1), pdf.numPages);
+    await irPara(ini);
+    if (!pdf.biblia) checarEscaneado();
+  }
+
+  async function checarEscaneado() {
+    var soma = 0, n = Math.min(pdf.numPages, 6);
+    for (var i = 1; i <= n; i++) { soma += (await textoDaPagina(i)).join(" ").length; }
+    if (soma < 80) setStatus("Este PDF parece escaneado (imagem sem texto). Assim a tradução e o áudio não funcionam; ele precisaria passar por OCR antes.", "warn");
+  }
+
+  async function textoDaPagina(n) {
+    if (paginasTexto[n]) return paginasTexto[n];
+    if (pdf.aula) return (paginasTexto[n] = pdf.paras.slice());
+    if (pdf.biblia) {
+      return (paginasTexto[n] = pdf.caps[n - 1].v.map(function (x) { return x[1]; }));
+    }
+    var p = await pdf.getPage(n);
+    var tc = await p.getTextContent();
+    var paras = montarParagrafos(tc.items);
+    paginasTexto[n] = paras;
+    return paras;
+  }
+
+  // Junta os pedacos do PDF em linhas e as linhas em paragrafos.
+  function montarParagrafos(items) {
+    var linhas = [], cur = null;
+    items.forEach(function (it) {
+      if (it.str === undefined) return;
+      var y = it.transform[5], h = Math.abs(it.transform[3]) || it.height || 10;
+      if (!cur || Math.abs(y - cur.y) > h * 0.5) { cur = { y: y, h: h, t: "" }; linhas.push(cur); }
+      cur.t += it.str;
+      if (it.hasEOL) cur = null;
+    });
+    linhas = linhas.map(function (l) { l.t = l.t.replace(/\s+/g, " ").trim(); return l; }).filter(function (l) { return l.t; });
+    if (!linhas.length) return [];
+    var maxLen = linhas.reduce(function (m, l) { return Math.max(m, l.t.length); }, 0);
+    var paras = [], p = linhas[0].t;
+    for (var i = 1; i < linhas.length; i++) {
+      var ant = linhas[i - 1], l = linhas[i];
+      var gap = ant.y - l.y;
+      var salto = gap > ant.h * 1.9 || gap < 0;
+      var fimFrase = /[.!?:;»”"]$/.test(ant.t) && ant.t.length < maxLen * 0.8;
+      if (salto || fimFrase) { paras.push(p); p = l.t; }
+      else if (/[A-Za-zÀ-ÿ]-$/.test(p)) { p = p.slice(0, -1) + l.t; }
+      else { p += " " + l.t; }
+    }
+    paras.push(p);
+    return paras;
+  }
+
+  function pintar(el, paras) {
+    var vs = pdf && pdf.biblia && pdf.caps[pagina - 1] ? pdf.caps[pagina - 1].v : null;
+    el.innerHTML = paras.length
+      ? paras.map(function (t, i) {
+          var num = vs && vs[i] ? '<sup class="vn" translate="no">' + escapar(vs[i][0]) + "</sup>" : "";
+          return "<p>" + num + escapar(t) + "</p>";
+        }).join("")
+      : '<p class="nada">Esta página não tem texto.</p>';
+    el.scrollTop = 0;
+    agendarAlinhar();
+  }
+
+  async function irPara(n) {
+    if (!pdf) return;
+    n = Math.min(Math.max(1, n), pdf.numPages);
+    pararAudio();
+    pagina = n;
+    $("num").value = n;
+    if (pdf.biblia) sincronizarNavBiblia();
+    var paras = await textoDaPagina(n);
+    pintar($("orig"), paras);
+    await mostrarTraducao(paras);
+    await carregarFixo();
+    salvarProgresso(false);
+  }
+
+  // ---------- Traducao nativa ----------
+  async function prepararNativo(lang) {
+    nativoDisponivel = false;
+    if (!("Translator" in self)) return "sem-api";
+    try {
+      var av = await Promise.race([
+        self.Translator.availability({ sourceLanguage: origLang, targetLanguage: lang }),
+        new Promise(function (ok) { setTimeout(function () { ok("unavailable"); }, 4000); })
+      ]);
+      if (av === "unavailable") return "sem-par";
+      if (av === "available" && tradutorLang !== lang) {
+        tradutor = await self.Translator.create({ sourceLanguage: origLang, targetLanguage: lang });
+        tradutorLang = lang;
+      }
+      nativoDisponivel = true;
+      return av;
+    } catch (e) {
+      return "bloqueado";
+    }
+  }
+
+  async function criarTradutorComToque(lang) {
+    // Baixar o modelo exige um toque do usuario.
+    setStatus("Baixando o tradutor do Chrome para " + NOME_LANG[lang] + "…");
+    tradutor = await self.Translator.create({
+      sourceLanguage: origLang, targetLanguage: lang,
+      monitor: function (m) {
+        m.addEventListener("downloadprogress", function (e) {
+          setStatus("Baixando o tradutor do Chrome… " + Math.round((e.loaded || 0) * 100) + "%");
+        });
+      }
+    });
+    tradutorLang = lang;
+  }
+
+  async function traduzirNativo(paras, lang) {
+    var chave = atual.id + "_" + lang + "_" + pagina;
+    try {
+      var salvo = await idbGet("traducoes", chave);
+      if (salvo) return salvo;
+    } catch (e) {}
+    var saida = [];
+    for (var i = 0; i < paras.length; i++) saida.push(await tradutor.translate(paras[i]));
+    try { await idbPut("traducoes", chave, saida); } catch (e) {}
+    return saida;
+  }
+
+  async function mostrarTraducao(paras) {
+    var lang = $("idioma").value;
+    var trad = $("trad");
+    delete trad.dataset.guardada;
+    $("rot-trad").textContent = "Tradução · " + NOME_LANG[lang];
+    $("traduzir").hidden = true;
+    var estado = await prepararNativo(lang);
+
+    if (nativoDisponivel && tradutor && tradutorLang === lang) {
+      trad.setAttribute("lang", lang);
+      trad.setAttribute("translate", "no");
+      setStatus("Traduzindo com o tradutor do próprio Chrome…");
+      try {
+        pintar(trad, await traduzirNativo(paras, lang));
+        setStatus("Tradução feita pelo Chrome, no seu aparelho. Fica salva para a próxima vez.", "ok");
+      } catch (e) {
+        pintarModoPagina(paras, lang);
+      }
+      return;
+    }
+    if (nativoDisponivel && estado !== "available") {
+      // modelo precisa ser baixado: pede um toque
+      pintarModoPagina(paras, lang);
+      $("traduzir").hidden = false;
+      setStatus("O Chrome tem tradutor, mas precisa baixar o idioma " + NOME_LANG[lang] + ". Toque em 🌐.");
+      return;
+    }
+    pintarModoPagina(paras, lang);
+  }
+
+  // Sem tradutor embutido: a janela da direita fica pronta para o "Traduzir" do Chrome.
+  function pintarModoPagina(paras, lang) {
+    var trad = $("trad");
+    trad.setAttribute("lang", origLang);
+    trad.setAttribute("translate", "yes");
+    pintar(trad, paras);
+    atualizarRotuloTrad();
+    setStatus("");
+  }
+
+  // Descobre em que idioma o Chrome traduziu a coluna do meio.
+  // 1) O Chrome costuma trocar o lang do <html> para o idioma de destino.
+  // 2) Se nao trocar, conta palavras comuns de cada lingua.
+  var PALAVRAS = {
+    pt: "que não uma com para os as dos das do da em no na seu sua ele ela mas muito também eram era foi pelo pela ao à disse sobre".split(" "),
+    en: "the and was were that with his her she he they of to in for had not but this which".split(" "),
+    es: "el los las y que una con por para su sus era eran pero muy también del al se le".split(" "),
+    fr: "le la les et que une avec pour son sa ses était étaient mais très aussi du au des qui".split(" "),
+    it: "il lo gli che una con per suo sua erano ma molto anche del della non di nel sono".split(" "),
+    de: "der die das und ein eine mit für sein seine war waren aber sehr auch nicht ich sie".split(" ")
+  };
+  function detectarIdioma(texto) {
+    var toks = (texto || "").toLowerCase().match(/[a-zà-ÿ]+/g) || [];
+    var melhor = "pt", pontos = -1;
+    Object.keys(PALAVRAS).forEach(function (l) {
+      var set = {}; PALAVRAS[l].forEach(function (w) { set[w] = 1; });
+      var n = 0; toks.forEach(function (t) { if (set[t]) n++; });
+      if (l === "pt") n += ((texto || "").match(/[ãõç]/gi) || []).length;
+      if (l === "es") n += ((texto || "").match(/[ñ¡¿]/g) || []).length;
+      if (n > pontos) { pontos = n; melhor = l; }
+    });
+    return melhor;
+  }
+  function idiomaDaTraducao() {
+    var trad = $("trad");
+    if (trad.dataset.guardada) return trad.dataset.guardada;                // pagina guardada
+    if (trad.getAttribute("translate") === "no") return $("idioma").value; // tradutor embutido
+    if (!pareceTraduzido()) return origLang;
+    var h = (document.documentElement.getAttribute("lang") || "").slice(0, 2).toLowerCase();
+    if (h && h !== origLang.slice(0, 2) && VOZ_LANG[h]) return h;
+    return detectarIdioma(trad.textContent.slice(0, 3000));
+  }
+  function atualizarRotuloTrad() {
+    var l = idiomaDaTraducao();
+    $("rot-trad").textContent = l === origLang ? "Tradução" : "Tradução · " + (NOME_LANG[l] || l) +
+      ($("trad").dataset.guardada ? " ⏬" : "");
+  }
+  var rotuloTimer = null;
+  function agendarRotulo() {
+    clearTimeout(rotuloTimer);
+    rotuloTimer = setTimeout(function () {
+      // Trocou o idioma do Chrome e a coluna mostra uma pagina guardada em outro idioma: volta ao vivo.
+      var g = $("trad").dataset.guardada, vivo = idiomaChromeAgora();
+      if (g && vivo && vivo !== g && pdf) { textoDaPagina(pagina).then(mostrarTraducao); return; }
+      atualizarRotuloTrad(); agendarAlinhar();
+    }, 300);
+  }
+  new MutationObserver(agendarRotulo).observe($("trad"), { childList: true, subtree: true, characterData: true });
+  new MutationObserver(agendarRotulo).observe(document.documentElement, { attributes: true, attributeFilter: ["lang", "class"] });
+
+  $("traduzir").addEventListener("click", async function () {
+    var lang = $("idioma").value;
+    try {
+      await criarTradutorComToque(lang);
+      $("traduzir").hidden = true;
+      await mostrarTraducao(paginasTexto[pagina] || []);
+    } catch (e) {
+      setStatus("O Chrome não liberou o tradutor aqui. Use ⋮ → Traduzir… do navegador.", "warn");
+    }
+  });
+
+  $("idioma").addEventListener("change", function () {
+    gravarPref("leitor.idioma", this.value);
+    tradutor = null; tradutorLang = null;
+    if (pdf) irPara(pagina);
+  });
+
+  // ---------- Progresso ----------
+  function salvarProgresso(agora) {
+    if (!atual || !pdf || atual.aula) return;
+    clearTimeout(salvarTimer);
+    var fazer = async function () {
+      atual.dados.paginaAtual = pagina;
+      atual.dados.totalPaginas = pdf.numPages;
+      atual.dados.ultimaLeitura = hoje();
+      gravarLivros();
+    };
+    if (agora) fazer(); else salvarTimer = setTimeout(fazer, 1500);
+  }
+  function setStatusProgresso() {}
+
+  // ---------- Audio (voz do sistema) ----------
+  // estado: "tocando" ou "pausado". Pausar guarda o paragrafo; Continuar recomeca dele.
+  var audio = { qual: null, estado: null, idx: 0, sub: 0, sessao: 0 };
+  var inicioEscolhido = { orig: null, trad: null, fixo: null };
+  var ultimaJanelaMarcada = null;
+  var JANELAS = ["orig", "trad", "fixo"];
+
+  // Vozes: o aparelho pode ter varias por idioma (Samsung, Google, rede...).
+  // Algumas "picotam". A escolhida pela pessoa fica salva por idioma.
+  function langDaVoz(v) { return String(v.lang || "").replace("_", "-").toLowerCase(); }
+  function vozesDe(lang) {
+    var base = (VOZ_LANG[lang] || lang).slice(0, 2).toLowerCase();
+    var vozes = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    return vozes.filter(function (v) { return langDaVoz(v).slice(0, 2) === base; });
+  }
+  function pontosVoz(v, lang) {
+    var alvo = (VOZ_LANG[lang] || lang).toLowerCase(), p = 0;
+    if (langDaVoz(v) === alvo) p += 4;
+    if (v.localService) p += 2;          // voz instalada no aparelho: sem picotar pela rede
+    if (/google/i.test(v.name)) p += 1;
+    if (/network|rede|online/i.test(v.name)) p -= 3;
+    return p;
+  }
+  function vozPara(lang) {
+    var lista = vozesDe(lang);
+    if (!lista.length) return null;
+    var salva = lerPref("leitor.voz." + lang, "");
+    if (salva) {
+      var achou = lista.find(function (v) { return v.voiceURI === salva || v.name === salva; });
+      if (achou) return achou;
+    }
+    return lista.slice().sort(function (a, b) { return pontosVoz(b, lang) - pontosVoz(a, lang); })[0];
+  }
+  var velocidade = parseFloat(lerPref("leitor.vel", "0.95")) || 0.95;
+  var VELOCIDADES = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1, 1.1, 1.25, 1.5, 1.75, 2];
+  function obterVelocidade(idioma) {
+    var salva = lerPref("leitor.vel." + idioma, "");
+    return salva ? parseFloat(salva) || velocidade : velocidade;
+  }
+  function montarPainelVozes() {
+    var el = $("painel-vozes");
+    var vel = '<div class="linha"><b>Velocidade</b><select class="sel" id="velocidade">' +
+      VELOCIDADES.map(function (v) {
+        return '<option value="' + v + '"' + (v === velocidade ? " selected" : "") + ">" +
+          String(v).replace(".", ",") + "x" + (v === 1 ? " (normal)" : "") + "</option>";
+      }).join("") + "</select></div>";
+    var langs = ["pt", "en", "es", "fr", "it", "de", "nl", "ru", "he", "ar", "ja", "zh", "ko"];
+    var html = langs.map(function (l) {
+      var lista = vozesDe(l);
+      if (!lista.length) return "";
+      var atualV = vozPara(l), salva = lerPref("leitor.voz." + l, "");
+      var ops = '<option value="">Automática (' + escapar(atualV ? atualV.name : "–") + ')</option>' +
+        lista.map(function (v) {
+          var id = v.voiceURI || v.name;
+          return '<option value="' + escapar(id) + '"' + (id === salva ? " selected" : "") + ">" +
+            escapar(v.name + " · " + v.lang + (v.localService ? "" : " · rede")) + "</option>";
+        }).join("");
+      var velAtual = obterVelocidade(l);
+      var velOps = VELOCIDADES.map(function (v) {
+        return '<option value="' + v + '"' + (Math.abs(v - velAtual) < 0.01 ? " selected" : "") + ">" +
+          String(v).replace(".", ",") + "x" + "</option>";
+      }).join("");
+      return '<div class="linha"><b>' + escapar(NOME_LANG_PT[l]) + '</b><select class="sel" data-voz="' + l + '">' + ops +
+        '</select><select class="sel" data-vel="' + l + '">' + velOps + '</select><button class="ico" type="button" data-testar="' + l + '">▶ testar</button></div>';
+    }).join("");
+    var qtd = '<div class="linha"><b>⏬ páginas</b><select class="sel" id="qtd-guardar">' +
+      [5, 10, 15, 20, 30].map(function (v) {
+        return '<option value="' + v + '"' + (v === JANELA_GUARDAR ? " selected" : "") + ">" + v + " por vez</option>";
+      }).join("") + "</select></div>";
+    el.innerHTML = vel + qtd + (html || '<div class="dica">Este aparelho não informou nenhuma voz.</div>') +
+      '<div class="dica">Se uma voz sai picotada, escolha outra do mesmo idioma e toque em testar. Vozes marcadas “rede” dependem da internet e costumam falhar mais. A escolha fica salva neste aparelho.</div>';
+  }
+  var FRASE_TESTE = { pt: "Era uma vez um comerciante muito rico, que tinha seis filhos.", en: "Once upon a time there was a very rich merchant.",
+    es: "Érase una vez un mercader muy rico.", fr: "Il était une fois un marchand très riche.", it: "C'era una volta un mercante molto ricco.", de: "Es war einmal ein sehr reicher Kaufmann.",
+    nl: "Er was eens een heel rijke koopman.", ru: "Жил-был очень богатый купец.", he: "היה היה סוחר עשיר מאוד.", ar: "كان يا ما كان تاجر غني جدا.", ja: "昔々、とても裕福な商人がいました。", zh: "从前有一个非常富有的商人。", ko: "옛날에 아주 부유한 상인이 있었습니다." };
+  $("painel-vozes").addEventListener("change", function (ev) {
+    if (ev.target.id === "qtd-guardar") {
+      JANELA_GUARDAR = parseInt(ev.target.value, 10) || 10;
+      gravarPref("leitor.qtd5", String(JANELA_GUARDAR));
+      return;
+    }
+    if (ev.target.id === "velocidade") {
+      velocidade = parseFloat(ev.target.value) || 1;
+      gravarPref("leitor.vel", String(velocidade));
+      // se estiver tocando, recomeca o paragrafo atual ja na nova velocidade
+      if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx);
+      return;
+    }
+    var v = ev.target.closest("[data-vel]");
+    if (v) { gravarPref("leitor.vel." + v.dataset.vel, v.value); if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx); return; }
+    var s = ev.target.closest("[data-voz]");
+    if (s) { gravarPref("leitor.voz." + s.dataset.voz, s.value); if (audio.estado === "tocando") pausar(); }
+  });
+  $("painel-vozes").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-testar]");
+    if (!b || !window.speechSynthesis) return;
+    if (audio.estado === "tocando") pausar();
+    speechSynthesis.cancel();
+    var l = b.dataset.testar, u = new SpeechSynthesisUtterance(FRASE_TESTE[l]);
+    var v = vozPara(l);
+    u.lang = v ? v.lang : (VOZ_LANG[l] || l);
+    if (v) u.voice = v;
+    u.rate = obterVelocidade(l);
+    speechSynthesis.speak(u);
+  });
+  $("btn-vozes").addEventListener("click", function () {
+    var abrir = $("painel-vozes").hidden;
+    if (abrir) montarPainelVozes();
+    $("painel-vozes").hidden = !abrir;
+    this.setAttribute("aria-pressed", abrir ? "true" : "false");
+  });
+  function btnOuvir(q) { return document.querySelector('[data-ouvir="' + q + '"]'); }
+  function btnParar(q) { return document.querySelector('[data-parar="' + q + '"]'); }
+  function atualizarBotoes() {
+    var alt = audio.qual === "todas";
+    $("alternar").setAttribute("aria-pressed", alt && audio.estado === "tocando" ? "true" : "false");
+    $("alternar").textContent = alt && audio.estado === "tocando" ? "⏸" : "🔁";
+    $("alternar").title = alt && audio.estado === "tocando" ? "Pausar leitura alternada"
+      : (alt ? "Continuar leitura alternada" : "Leitura alternada");
+    JANELAS.forEach(function (q) {
+      var b = btnOuvir(q), s = btnParar(q);
+      if (alt) { b.textContent = "▶"; b.title = "Ouvir"; s.hidden = false; return; }
+      if (audio.qual === q && audio.estado === "tocando") { b.textContent = "⏸"; b.title = "Pausar"; s.hidden = false; }
+      else if (inicioEscolhido[q] != null) { b.textContent = "▶"; b.title = "Ouvir a partir do parágrafo marcado"; s.hidden = !(audio.qual === q); }
+      else if (audio.qual === q && audio.estado === "pausado") { b.textContent = "▶"; b.title = "Continuar"; s.hidden = false; }
+      else { b.textContent = "▶"; b.title = "Ouvir"; s.hidden = true; }
+    });
+  }
+  function limparDestaque() {
+    document.querySelectorAll("p.falando").forEach(function (p) { p.classList.remove("falando"); });
+  }
+  function limparEscolha(q) {
+    inicioEscolhido[q] = null;
+    if (ultimaJanelaMarcada === q) ultimaJanelaMarcada = null;
+    $(q).querySelectorAll("p.inicio").forEach(function (p) { p.classList.remove("inicio"); });
+  }
+  function pararAudio() {
+    audio.sessao++;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    limparDestaque();
+    JANELAS.forEach(limparEscolha);
+    audio.qual = null; audio.estado = null; audio.idx = 0; audio.sub = 0;
+    atualizarBotoes();
+  }
+  function pausar() {
+    audio.sessao++;
+    speechSynthesis.cancel();
+    audio.estado = "pausado";
+    atualizarBotoes();
+    setStatus("Áudio pausado. Toque em ▶ para voltar do parágrafo marcado.", "ok");
+  }
+  function idiomaDe(qual) {
+    if (qual === "orig") return origLang;
+    if (qual === "fixo") return $("idioma3").value;
+    return idiomaDaTraducao();
+  }
+  function tocarDe(qual, idx) {
+    if (!window.speechSynthesis) { setStatus("Este navegador não tem leitura em voz alta.", "warn"); return; }
+    speechSynthesis.cancel();
+    audio.sessao++;
+    var sessao = audio.sessao;
+    var ps = paragrafosDe($(qual));
+    if (!ps.length) return;
+    audio.qual = qual; audio.estado = "tocando"; audio.idx = Math.min(Math.max(0, idx), ps.length - 1);
+    limparEscolha(qual);
+    atualizarBotoes();
+    var lang = idiomaDe(qual), voz = vozPara(lang);
+    (function prox() {
+      if (sessao !== audio.sessao) return;
+      if (audio.idx >= ps.length) { pararAudio(); return; }
+      limparDestaque();
+      var p = ps[audio.idx];
+      p.classList.add("falando");
+      janelasVisiveis().forEach(function (el) {
+        var outro = paragrafosDe(el)[audio.idx];
+        if (outro) outro.classList.add("falando");
+      });
+      p.scrollIntoView({ block: "nearest" });
+      var u = new SpeechSynthesisUtterance(textoFala(p));
+      u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
+      if (voz) u.voice = voz;
+      u.rate = obterVelocidade(lang);
+      var seguir = function () { if (sessao !== audio.sessao) return; audio.idx++; prox(); };
+      u.onend = seguir;
+      u.onerror = seguir;
+      speechSynthesis.speak(u);
+    })();
+  }
+  function ouvir(qual) {
+    if (audio.qual === qual && audio.estado === "tocando") { pausar(); return; }
+    var inicio = 0;
+    if (inicioEscolhido[qual] != null) inicio = inicioEscolhido[qual];
+    else if (audio.qual === qual && audio.estado === "pausado") inicio = audio.idx;
+    if (audio.qual && audio.qual !== qual) { var guardado = inicioEscolhido[qual]; pararAudio(); if (guardado != null) inicio = guardado; }
+    tocarDe(qual, inicio);
+  }
+  // ---------- Leitura alternada ----------
+  // Paragrafo 1 em cada coluna visivel (original, traducao, 3a), depois o 2, etc.
+  function tocarAlternado(idx, sub) {
+    if (!window.speechSynthesis) { setStatus("Este navegador não tem leitura em voz alta.", "warn"); return; }
+    speechSynthesis.cancel();
+    audio.sessao++;
+    var sessao = audio.sessao;
+    var panes = janelasVisiveis().filter(function (el) { return paragrafosDe(el).length; });
+    if (!panes.length) return;
+    JANELAS.forEach(limparEscolha);
+    audio.qual = "todas"; audio.estado = "tocando"; audio.idx = Math.max(0, idx); audio.sub = sub || 0;
+    atualizarBotoes();
+    var total = Math.max.apply(null, panes.map(function (el) { return paragrafosDe(el).length; }));
+    (function prox() {
+      if (sessao !== audio.sessao) return;
+      if (audio.sub >= panes.length) { audio.sub = 0; audio.idx++; }
+      if (audio.idx >= total) { pararAudio(); setStatus("Leitura alternada terminou nesta página.", "ok"); return; }
+      var el = panes[audio.sub], p = paragrafosDe(el)[audio.idx];
+      var seguir = function () { if (sessao !== audio.sessao) return; audio.sub++; prox(); };
+      if (!p) { seguir(); return; }
+      limparDestaque();
+      janelasVisiveis().forEach(function (outro) {
+        var q = paragrafosDe(outro)[audio.idx];
+        if (q) q.classList.add("falando");
+      });
+      p.scrollIntoView({ block: "nearest" });
+      var lang = idiomaDe(el.id), voz = vozPara(lang);
+      var u = new SpeechSynthesisUtterance(textoFala(p));
+      u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
+      if (voz) u.voice = voz;
+      u.rate = obterVelocidade(lang);
+      u.onend = seguir;
+      u.onerror = seguir;
+      speechSynthesis.speak(u);
+    })();
+  }
+  $("alternar").addEventListener("click", function () {
+    if (audio.qual === "todas" && audio.estado === "tocando") { pausar(); return; }
+    if (audio.qual === "todas" && audio.estado === "pausado") { tocarAlternado(audio.idx, audio.sub); return; }
+    var inicio = 0, sub = 0;
+    JANELAS.forEach(function (q) { if (inicioEscolhido[q] != null) inicio = inicioEscolhido[q]; });
+    if (audio.qual && audio.estado) inicio = audio.idx;
+    if (ultimaJanelaMarcada) {
+      var panes = janelasVisiveis();
+      for (var i = 0; i < panes.length; i++) {
+        if (panes[i].id === ultimaJanelaMarcada) { sub = i; break; }
+      }
+    }
+    pararAudio();
+    tocarAlternado(inicio, sub);
+  });
+
+  // Tocar num paragrafo: se o audio desta janela esta tocando, pula para ele;
+  // senao, marca o paragrafo como ponto de partida.
+  function aoTocarParagrafo(ev) {
+    var janela = ev.currentTarget, qual = janela.id;
+    var p = ev.target.closest("p");
+    if (!p || p.classList.contains("nada")) return;
+    try { if (String(window.getSelection() || "").length) return; } catch (e) {}
+    var ps = Array.prototype.slice.call(paragrafosDe(janela));
+    var i = ps.indexOf(p);
+    if (i < 0) return;
+    if (audio.qual === "todas" && audio.estado === "tocando") { tocarAlternado(i, 0); return; }
+    if (audio.qual === qual && audio.estado === "tocando") { tocarDe(qual, i); return; }
+    if (inicioEscolhido[qual] === i) { limparEscolha(qual); atualizarBotoes(); return; }
+    limparEscolha(qual);
+    p.classList.add("inicio");
+    inicioEscolhido[qual] = i;
+    ultimaJanelaMarcada = qual;
+    atualizarBotoes();
+    setStatus("Parágrafo marcado nesta coluna. Toque em 🔁 para ler alternadamente a partir daqui.", "ok");
+  }
+  function pareceTraduzido() {
+    var a = $("orig").textContent.trim().slice(0, 200), b = $("trad").textContent.trim().slice(0, 200);
+    return a && b && a !== b;
+  }
+  document.querySelectorAll("[data-ouvir]").forEach(function (b) {
+    b.addEventListener("click", function () { ouvir(b.dataset.ouvir); });
+  });
+  document.querySelectorAll("[data-parar]").forEach(function (b) {
+    b.addEventListener("click", function () { pararAudio(); setStatus("Áudio parado.", "ok"); });
+  });
+  $("orig").addEventListener("click", aoTocarParagrafo);
+  $("trad").addEventListener("click", aoTocarParagrafo);
+  $("fixo").addEventListener("click", aoTocarParagrafo);
+  if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () {
+    if (!$("painel-vozes").hidden) montarPainelVozes();
+  };
+
+  // ---------- Rolagem sincronizada (por paragrafo) ----------
+  var syncLigado = lerPref("leitor.sync", "1") === "1";
+  var syncDono = null, syncSolta = null;
+  function aplicarSyncBotao() {
+    $("sync").setAttribute("aria-pressed", syncLigado ? "true" : "false");
+    $("sync").title = syncLigado ? "Rolagem junta (ligada)" : "Rolagem separada";
+  }
+  function paragrafosDe(el) { return el.querySelectorAll("p:not(.nada)"); }
+  function espelhar(origem, destino) {
+    var po = paragrafosDe(origem), pd = paragrafosDe(destino);
+    if (!po.length || !pd.length) return;
+    // No fim da janela, encosta a outra no fim tambem.
+    if (origem.scrollTop + origem.clientHeight >= origem.scrollHeight - 2) {
+      destino.scrollTop = destino.scrollHeight; return;
+    }
+    var topo = origem.scrollTop, i = 0;
+    while (i < po.length - 1 && po[i + 1].offsetTop <= topo) i++;
+    var p = po[i];
+    var frac = p.offsetHeight ? Math.min(1, Math.max(0, (topo - p.offsetTop) / p.offsetHeight)) : 0;
+    var alvo = pd[Math.min(i, pd.length - 1)];
+    destino.scrollTop = alvo.offsetTop + frac * alvo.offsetHeight;
+  }
+  function aoRolar(ev) {
+    if (!syncLigado) return;
+    var origem = ev.currentTarget;
+    if (syncDono && syncDono !== origem) return; // rolagem causada pelo espelho
+    syncDono = origem;
+    window.requestAnimationFrame(function () {
+      janelasVisiveis().forEach(function (d) { if (d !== origem) espelhar(origem, d); });
+    });
+    clearTimeout(syncSolta);
+    syncSolta = setTimeout(function () { syncDono = null; }, 150);
+  }
+  $("orig").addEventListener("scroll", aoRolar, { passive: true });
+  $("trad").addEventListener("scroll", aoRolar, { passive: true });
+  $("fixo").addEventListener("scroll", aoRolar, { passive: true });
+  function janelasVisiveis() {
+    return JANELAS.filter(function (q) { return q !== "fixo" || col3Ligada; }).map($);
+  }
+  $("sync").addEventListener("click", function () {
+    syncLigado = !syncLigado;
+    gravarPref("leitor.sync", syncLigado ? "1" : "0");
+    aplicarSyncBotao();
+    if (syncLigado) janelasVisiveis().forEach(function (d) { if (d.id !== "orig") espelhar($("orig"), d); });
+  });
+  aplicarSyncBotao();
+
+  // ---------- Terceira coluna (texto fixado) ----------
+  // Guarda uma copia da traducao do Chrome (ou um texto colado) protegida com
+  // translate="no". Assim da para trocar o idioma do Chrome e ter tres idiomas.
+  var col3Ligada = lerPref("leitor.col3", "0") === "1";
+  $("idioma3").value = lerPref("leitor.idioma3", "en");
+  function chaveFixo() { return atual ? atual.id + "_fixo_" + pagina : null; }
+  // ---------- Alinhar paragrafos/versiculos lado a lado ----------
+  // Cada paragrafo ganha a altura do mais alto da mesma linha nas colunas
+  // visiveis, entao o versiculo 7 comeca na mesma altura nas tres.
+  var alinharPedido = false;
+  function agendarAlinhar() {
+    if (alinharPedido) return;
+    alinharPedido = true;
+    window.requestAnimationFrame(function () { alinharPedido = false; alinhar(); });
+  }
+  function alinhar() {
+    var listas = janelasVisiveis().map(function (el) { return Array.prototype.slice.call(paragrafosDe(el)); });
+    listas.forEach(function (l) { l.forEach(function (p) { p.style.minHeight = ""; }); });
+    if (window.innerWidth <= 720 || listas.length < 2) return; // colunas empilhadas: nao alinha
+    var n = Math.max.apply(null, listas.map(function (l) { return l.length; }));
+    var alturas = [];
+    for (var i = 0; i < n; i++) {
+      alturas.push(Math.max.apply(null, listas.map(function (l) { return l[i] ? l[i].offsetHeight : 0; })));
+    }
+    listas.forEach(function (l) { l.forEach(function (p, i) { p.style.minHeight = alturas[i] + "px"; }); });
+  }
+  window.addEventListener("resize", agendarAlinhar);
+
+  function aplicarCol3() {
+    $("janela-fixo").hidden = !col3Ligada;
+    document.querySelector(".janelas").classList.toggle("tres", col3Ligada);
+    $("col3").setAttribute("aria-pressed", col3Ligada ? "true" : "false");
+    $("col3").title = col3Ligada ? "Esconder a 3ª coluna" : "Mostrar a 3ª coluna";
+    agendarAlinhar();
+  }
+  function pintarFixo(dado) {
+    var el = $("fixo");
+    if (dado && dado.paras && dado.paras.length) {
+      if (dado.lang) $("idioma3").value = dado.lang;
+      el.setAttribute("lang", $("idioma3").value);
+      pintar(el, dado.paras);
+    } else {
+      el.innerHTML = '<p class="nada">Coluna em branco. Traduza a coluna do meio pelo Chrome e toque em 📋 (esta página) ou ⏬ (esta e as seguintes), ou em 📥 para colar um texto seu. Depois é só trocar o idioma do Chrome.</p>';
+      el.scrollTop = 0;
+      agendarAlinhar();
+    }
+  }
+  async function carregarFixo() {
+    var dado = null;
+    try { if (idb && chaveFixo()) dado = await idbGet("traducoes", chaveFixo()); } catch (e) {}
+    pintarFixo(dado);
+  }
+  async function salvarFixo(paras) {
+    var dado = { lang: $("idioma3").value, paras: paras };
+    try { if (idb && chaveFixo()) await idbPut("traducoes", chaveFixo(), dado); } catch (e) {}
+    pintarFixo(dado);
+    if (syncLigado) espelhar($("orig"), $("fixo"));
+  }
+  function dividirTexto(t) {
+    var blocos = t.replace(/\r/g, "").split(/\n\s*\n/);
+    if (blocos.length < 2) blocos = t.split(/\n/);
+    return blocos.map(function (b) { return b.replace(/\s+/g, " ").trim(); }).filter(Boolean);
+  }
+  $("col3").addEventListener("click", function () {
+    col3Ligada = !col3Ligada;
+    gravarPref("leitor.col3", col3Ligada ? "1" : "0");
+    if (!col3Ligada && audio.qual === "fixo") pararAudio();
+    aplicarCol3();
+  });
+  $("trazer").addEventListener("click", async function () {
+    if (!pareceTraduzido()) {
+      setStatus("A coluna do meio ainda está em português. Traduza pelo Chrome (⋮ → Traduzir…) e toque de novo em 📋.", "warn");
+      return;
+    }
+    if (audio.qual === "fixo") pararAudio();
+    $("idioma3").value = idiomaDaTraducao();
+    gravarPref("leitor.idioma3", $("idioma3").value);
+    var paras = Array.prototype.map.call(paragrafosDe($("trad")), function (p) {
+      return textoFala(p).replace(/\s+/g, " ").trim();
+    }).filter(Boolean);
+    await salvarFixo(paras);
+    setStatus("Tradução fixada na 3ª coluna em " + $("idioma3").selectedOptions[0].text + " (se o idioma estiver errado, troque na caixinha dela). Agora pode trocar o idioma do Chrome.", "ok");
+  });
+  $("colar").addEventListener("click", async function () {
+    if (audio.qual === "fixo") pararAudio();
+    var el = $("fixo");
+    el.innerHTML = '<div class="colar"><textarea id="caixa-colar" placeholder="Toque e segure aqui → Colar"></textarea>' +
+      '<div class="grupo"><button class="ico" id="cancelar-colar" type="button">Cancelar</button>' +
+      '<button class="ico" id="salvar-colar" type="button">Salvar</button></div></div>';
+    el.scrollTop = 0;
+    var caixa = $("caixa-colar");
+    try { if (navigator.clipboard && navigator.clipboard.readText) caixa.value = await navigator.clipboard.readText(); } catch (e) {}
+    caixa.focus();
+    $("cancelar-colar").onclick = function () { carregarFixo(); };
+    $("salvar-colar").onclick = async function () {
+      var paras = dividirTexto(caixa.value);
+      if (!paras.length) { carregarFixo(); return; }
+      await salvarFixo(paras);
+      setStatus("Texto salvo na 3ª coluna. Confira o idioma na caixinha dela para o áudio ler certo.", "ok");
+    };
+  });
+  $("limpar3").addEventListener("click", async function () {
+    if (audio.qual === "fixo") pararAudio();
+    try { if (idb && chaveFixo()) await idbPut("traducoes", chaveFixo(), null); } catch (e) {}
+    pintarFixo(null);
+    setStatus("3ª coluna limpa nesta página.", "ok");
+  });
+  $("idioma3").addEventListener("change", async function () {
+    gravarPref("leitor.idioma3", this.value);
+    $("fixo").setAttribute("lang", this.value);
+    if (audio.qual === "fixo") pararAudio();
+    try {
+      var dado = idb && chaveFixo() ? await idbGet("traducoes", chaveFixo()) : null;
+      if (dado && dado.paras) { dado.lang = this.value; await idbPut("traducoes", chaveFixo(), dado); }
+    } catch (e) {}
+  });
+  aplicarCol3();
+
+  // ---------- Biblia (CSV/JSON) ----------
+  function textoFala(p) {
+    var c = p.cloneNode(true);
+    c.querySelectorAll(".vn").forEach(function (x) { x.remove(); });
+    return c.textContent;
+  }
+  function semAcento(t) { return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+  function linhasCsv(texto) {
+    var linhas = [], campo = "", linha = [], aspas = false, sep = null;
+    for (var i = 0; i < texto.length; i++) {
+      var c = texto[i];
+      if (sep === null && (c === "," || c === ";" || c === "\t") && !aspas) sep = c;
+      if (aspas) {
+        if (c === '"') { if (texto[i + 1] === '"') { campo += '"'; i++; } else aspas = false; }
+        else campo += c;
+      } else if (c === '"') aspas = true;
+      else if (c === sep) { linha.push(campo); campo = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && texto[i + 1] === "\n") i++;
+        linha.push(campo); campo = "";
+        if (linha.some(function (x) { return x !== ""; })) linhas.push(linha);
+        linha = [];
+      } else campo += c;
+    }
+    linha.push(campo);
+    if (linha.some(function (x) { return x !== ""; })) linhas.push(linha);
+    return linhas;
+  }
+  // Tudo vira: caps = [{ l: "Gênesis", c: 1, v: [[1, "texto"], ...] }, ...]
+  function lerBiblia(texto, nome) {
+    texto = texto.replace(/^\uFEFF/, "");
+    var caps = [], idx = {};
+    function add(livro, cap, n, t) {
+      t = String(t == null ? "" : t).replace(/\s+/g, " ").trim();
+      if (!t) return;
+      var k = livro + "|" + cap;
+      if (!idx[k]) { idx[k] = { l: String(livro), c: Number(cap) || cap, v: [] }; caps.push(idx[k]); }
+      idx[k].v.push([n, t]);
+    }
+    if (/\.json$/i.test(nome) || /^[\[{]/.test(texto.trim())) {
+      var d = JSON.parse(texto);
+      if (d && d.livros) {                                   // web-biblia.json: {livros:{GEN:{"1":[{n,t}]}}}
+        Object.keys(d.livros).forEach(function (lv) {
+          var cs = d.livros[lv];
+          Object.keys(cs).sort(function (a, b) { return a - b; }).forEach(function (c) {
+            cs[c].forEach(function (v) { add(lv, c, v.n, v.t); });
+          });
+        });
+      } else if (Array.isArray(d) && d.length && d[0].chapters) { // [{name|abbrev, chapters:[[...]]}]
+        d.forEach(function (b) {
+          b.chapters.forEach(function (vs, ci) { vs.forEach(function (t, vi) { add(b.name || b.abbrev, ci + 1, vi + 1, t); }); });
+        });
+      } else if (Array.isArray(d)) {                           // [{livro, capitulo, versiculo, texto}]
+        d.forEach(function (r) {
+          add(r.livro || r.book || r.book_name, r.capitulo || r.chapter, r.versiculo || r.verse, r.texto || r.text);
+        });
+      }
+    } else {
+      var ls = linhasCsv(texto);
+      var cab = ls[0].map(semAcento);
+      function col(nomes, pad) {
+        for (var i = 0; i < cab.length; i++) if (nomes.indexOf(cab[i]) >= 0) return i;
+        return pad;
+      }
+      var temCab = cab.some(function (h) { return /livro|book|texto|text/.test(h); });
+      var cL = col(["livro", "book", "book_name", "nome"], 0), cC = col(["capitulo", "chapter", "cap"], 1),
+          cV = col(["versiculo", "verse", "vers", "v"], 2), cT = col(["texto", "text", "t"], 3);
+      ls.slice(temCab ? 1 : 0).forEach(function (r) {
+        // texto com virgula sem aspas: junta o que sobrou na ultima coluna
+        var t = (cT === cab.length - 1 && r.length > cab.length) ? r.slice(cT).join(", ") : r[cT];
+        add(r[cL], r[cC], r[cV], t);
+      });
+    }
+    if (!caps.length) throw new Error("não reconheci o formato (precisa das colunas livro, capítulo, versículo, texto)");
+    var amostra = caps.slice(0, 3).map(function (c) { return c.v.map(function (x) { return x[1]; }).join(" "); }).join(" ");
+    return { tipo: "biblia", caps: caps, lang: detectarIdioma(amostra.slice(0, 4000)) };
+  }
+  function definirIdiomaOriginal(l) {
+    origLang = l || "pt";
+    $("orig").setAttribute("lang", origLang);
+    $("rot-orig").textContent = "Original · " + (NOME_LANG_PT[origLang] || origLang);
+    document.documentElement.setAttribute("lang", origLang === "pt" ? "pt-BR" : origLang);
+  }
+  function montarNavBiblia() {
+    var nomes = [], vistos = {};
+    pdf.caps.forEach(function (c, i) { if (!(c.l in vistos)) { vistos[c.l] = i; nomes.push(c.l); } });
+    pdf.inicioLivro = vistos;
+    $("bLivro").innerHTML = nomes.map(function (n) { return '<option value="' + escapar(n) + '">' + escapar(n) + "</option>"; }).join("");
+  }
+  function sincronizarNavBiblia() {
+    var cap = pdf.caps[pagina - 1];
+    if ($("bLivro").value !== cap.l) $("bLivro").value = cap.l;
+    var ini = pdf.inicioLivro[cap.l], opts = [];
+    for (var i = ini; i < pdf.caps.length && pdf.caps[i].l === cap.l; i++) {
+      opts.push('<option value="' + (i + 1) + '">' + escapar(pdf.caps[i].c) + "</option>");
+    }
+    $("bCap").innerHTML = opts.join("");
+    $("bCap").value = String(pagina);
+    $("nome-livro").textContent = cap.l + " " + cap.c;
+  }
+  $("bLivro").addEventListener("change", function () { irPara(pdf.inicioLivro[this.value] + 1); });
+  $("bCap").addEventListener("change", function () { irPara(parseInt(this.value, 10)); });
+
+  // ---------- ⏬ Trazer 5 paginas para a 3a coluna ----------
+  // A traducao continua sendo a do Chrome: o leitor coloca cada pagina numa
+  // area escondida (encolhida, mas dentro da tela, para o Chrome traduzir),
+  // espera a traducao e guarda. As paginas ja lidas saem da memoria.
+  var JANELA_GUARDAR = parseInt(lerPref("leitor.qtd5", "10"), 10) || 10, preparando = false;
+  function chromeTraduzindo() {
+    var h = document.documentElement;
+    if (/translated-/.test(h.className)) return true;
+    var l = (h.getAttribute("lang") || "").slice(0, 2).toLowerCase();
+    return !!l && l !== origLang.slice(0, 2);
+  }
+  function idiomaChromeAgora() {
+    if (!chromeTraduzindo()) return null;
+    var h = (document.documentElement.getAttribute("lang") || "").slice(0, 2).toLowerCase();
+    return (h && h !== origLang.slice(0, 2) && VOZ_LANG[h]) ? h : null;
+  }
+  function limpo(t) { return String(t || "").replace(/\s+/g, " ").trim(); }
+  function esperarTraducao(el, originais) {
+    return new Promise(function (ok) {
+      var ultimo = -1, parado = 0, t0 = Date.now();
+      var iv = setInterval(function () {
+        var ps = el.querySelectorAll("p"), mud = 0;
+        ps.forEach(function (p, i) { if (limpo(p.innerText || p.textContent) !== originais[i]) mud++; });
+        if (mud === ultimo) parado += 300; else { parado = 0; ultimo = mud; }
+        if (mud === ps.length || (mud > 0 && parado >= 1500) || Date.now() - t0 > 20000) { clearInterval(iv); ok(mud); }
+      }, 300);
+    });
+  }
+  // Traduz a pagina n numa area escondida (o Chrome traduz) e devolve {lang, paras}.
+  async function traduzirPaginaEscondida(n) {
+    var paras = await textoDaPagina(n), area = $("preparo");
+    if (!paras.length) return { lang: null, paras: [] };
+    var originais = paras.map(limpo);
+    area.innerHTML = paras.map(function (t) { return "<p>" + escapar(t) + "</p>"; }).join("");
+    var mud = await esperarTraducao(area, originais);
+    var saida = Array.prototype.map.call(area.querySelectorAll("p"), function (p) { return limpo(p.innerText || p.textContent); });
+    area.innerHTML = "";
+    if (!mud) return null;
+    var lang = idiomaChromeAgora() || detectarIdioma(saida.join(" ").slice(0, 3000));
+    return { lang: lang, paras: saida };
+  }
+  function chaveFixoDe(n) { return atual.id + "_fixo_" + n; }
+  function marcaGuardar(txt) { $("guardar").textContent = "⏬" + (txt ? " " + txt : ""); }
+  async function trazerCinco() {
+    if (preparando || !atual || !pdf || !idb) return;
+    if (!chromeTraduzindo() && !pareceTraduzido()) {
+      marcaGuardar("!");
+      setStatus("⏬ Primeiro ligue o Traduzir do Chrome (⋮ → Traduzir…) no idioma que vai para a 3ª coluna.", "warn");
+      return;
+    }
+    preparando = true;
+    if (audio.qual === "fixo" || audio.qual === "todas") pararAudio();
+    var livroId = atual.id, inicio = pagina, fim = Math.min(pdf.numPages, pagina + JANELA_GUARDAR - 1);
+    try {
+      // as ja lidas saem da 3a coluna
+      for (var k = Math.max(1, inicio - 30); k < inicio; k++) { try { await idbDel("traducoes", chaveFixoDe(k)); } catch (e) {} }
+      var langFinal = null;
+      for (var n = inicio; n <= fim; n++) {
+        if (!atual || atual.id !== livroId) return;
+        marcaGuardar((n - inicio + 1) + "/" + (fim - inicio + 1));
+        setStatus("⏬ Trazendo a página " + n + " para a 3ª coluna (" + (n - inicio + 1) + " de " + (fim - inicio + 1) + ")…");
+        var r = await traduzirPaginaEscondida(n);
+        if (!r) { marcaGuardar("!"); setStatus("⏬ O Chrome não traduziu a página " + n + ". Confira se o Traduzir está ligado e toque em ⏬ de novo.", "warn"); return; }
+        if (!r.paras.length) continue;
+        langFinal = r.lang;
+        await idbPut("traducoes", chaveFixoDe(n), { lang: r.lang, paras: r.paras });
+      }
+      marcaGuardar("✓");
+      if (langFinal) { $("idioma3").value = langFinal; gravarPref("leitor.idioma3", langFinal); }
+      if (!col3Ligada) { col3Ligada = true; gravarPref("leitor.col3", "1"); aplicarCol3(); }
+      await carregarFixo();
+      setStatus("⏬ Páginas " + inicio + " a " + fim + " na 3ª coluna" + (langFinal ? " (" + (NOME_LANG_PT[langFinal] || langFinal) + ")" : "") + ". Agora pode trocar o idioma do Chrome.", "ok");
+    } finally {
+      preparando = false;
+      $("preparo").innerHTML = "";
+    }
+  }
+  $("guardar").addEventListener("click", trazerCinco);
+
+  // ---------- Legenda dos botoes ----------
+  var legendaAberta = lerPref("leitor.legenda2", "0") === "1";
+  function aplicarLegenda() {
+    $("legenda").hidden = !legendaAberta;
+    $("ajuda").setAttribute("aria-pressed", legendaAberta ? "true" : "false");
+  }
+  $("ajuda").addEventListener("click", function () {
+    legendaAberta = !legendaAberta;
+    gravarPref("leitor.legenda2", legendaAberta ? "1" : "0");
+    aplicarLegenda();
+  });
+  aplicarLegenda();
+
+  // ---------- Navegacao e letra ----------
+  $("ant").addEventListener("click", function () { irPara(pagina - 1); });
+  $("prox").addEventListener("click", function () { irPara(pagina + 1); });
+  $("num").addEventListener("change", function () { irPara(parseInt(this.value, 10) || 1); });
+  $("voltar").addEventListener("click", function () {
+    pararAudio();
+    salvarProgresso(true);
+    $("tela-leitor").hidden = true;
+    $("tela-estante").hidden = false;
+    document.body.classList.remove("modo-biblia");
+    document.body.classList.remove("modo-aula");
+    carregarAula().then(function (a) { aulaAtual = a; renderEstante(); });
+    carregarOracoes().then(function (o) { oracoes = o; renderEstante(); });
+    definirIdiomaOriginal("pt");
+  });
+  var tam = parseInt(lerPref("leitor.tam", "18"), 10) || 18;
+  function aplicarTam() { document.documentElement.style.setProperty("--tam", tam + "px"); gravarPref("leitor.tam", String(tam)); agendarAlinhar(); }
+  $("menor").addEventListener("click", function () { tam = Math.max(14, tam - 1); aplicarTam(); });
+  $("maior").addEventListener("click", function () { tam = Math.min(28, tam + 1); aplicarTam(); });
+  aplicarTam();
+  $("idioma").value = lerPref("leitor.idioma", "en");
+  // O seletor so serve para o tradutor embutido do Chrome (computador com Chrome novo).
+  // Sem ele (tablet, celular, Chrome antigo), some para o topo caber em duas linhas.
+  if (!("Translator" in self)) $("grupo-idioma").hidden = true;
+
+  // ---------- Armazenamento no aparelho ----------
+  function abrirIdb() {
+    return new Promise(function (ok, erro) {
+      var r = indexedDB.open("leitor-bilingue", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("pdfs"); r.result.createObjectStore("traducoes"); };
+      r.onsuccess = function () { ok(r.result); };
+      r.onerror = function () { erro(r.error); };
+    });
+  }
+  function idbPut(loja, chave, valor) {
+    return new Promise(function (ok, erro) {
+      var t = idb.transaction(loja, "readwrite"); t.objectStore(loja).put(valor, chave);
+      t.oncomplete = function () { ok(); }; t.onerror = function () { erro(t.error); };
+    });
+  }
+  function idbDel(loja, chave) {
+    return new Promise(function (ok, erro) {
+      var t = idb.transaction(loja, "readwrite"); t.objectStore(loja).delete(chave);
+      t.oncomplete = function () { ok(); }; t.onerror = function () { erro(t.error); };
+    });
+  }
+  function idbGet(loja, chave) {
+    return new Promise(function (ok, erro) {
+      var r = idb.transaction(loja, "readonly").objectStore(loja).get(chave);
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { erro(r.error); };
+    });
+  }
+  function gravarLivros() { gravarPref("leitor.livros", JSON.stringify(livros)); renderEstante(); }
+
+  async function iniciar() {
+    try { idb = await abrirIdb(); } catch (e) { idb = null; }
+    try { livros = JSON.parse(lerPref("leitor.livros", "[]")) || []; } catch (e) { livros = []; }
+    renderEstante();
+    aulaAtual = await carregarAula();
+    oracoes = await carregarOracoes();
+    renderEstante();
+  }
+  iniciar();
+})();
+</script>
+<div id="preparo" translate="yes" aria-hidden="true"></div>
+</body>
+</html>

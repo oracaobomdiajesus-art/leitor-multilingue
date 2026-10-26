@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia de Estudos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<!-- Gerado por ferramentas/guia_estudos/build.py — edite sessoes.py e rode o build. -->
+<style>
+/* Design: Biblioteca de gramática multilíngue - estude português, inglês e espanhol lado a lado */
+:root {
+  --bg: #fafaf8;
+  --paper: #ffffff;
+  --text: #1a1a18;
+  --muted: #666660;
+  --border: #ebe8e0;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f0f0d;
+    --paper: #1a1a18;
+    --text: #f5f3f0;
+    --muted: #999995;
+    --border: #2a2a26;
+    --accent: #3b82f6;
+    --accent-soft: #1e3a8a;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #f87171;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f0f0d;
+  --paper: #1a1a18;
+  --text: #f5f3f0;
+  --muted: #999995;
+  --border: #2a2a26;
+  --accent: #3b82f6;
+  --accent-soft: #1e3a8a;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #f87171;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-family: 'Merriweather', serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-wrap: balance;
+}
+
+h2 {
+  font-family: 'Merriweather', serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 24px 0 12px 0;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 14px 0 8px 0;
+}
+
+h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 10px 0 6px 0;
+}
+
+.header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 12px 0;
+  z-index: 10;
+}
+
+.tab-btn {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.content { display: none; }
+.content.active { display: block; }
+
+.topic {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.topic h2 { margin-top: 0; }
+
+.rule-box {
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.rule-box strong { color: var(--accent); }
+
+.example {
+  background: #f9fafb;
+  border-left: 4px solid var(--muted);
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Merriweather', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .example { background: #1f1d20; }
+}
+
+.example-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.grammar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.grammar-table th {
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent);
+}
+
+.grammar-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grammar-table tr:last-child td { border-bottom: none; }
+
+.verb-box {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.verb-header {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.verb-info {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .verb-info { grid-template-columns: 1fr; }
+}
+
+.verb-info strong { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+
+.resources {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.resource-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 14px;
+  gap: 8px;
+  word-break: break-word;
+}
+
+.resource-link a {
+  color: var(--accent);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-link a:hover { text-decoration: underline; }
+
+.tip {
+  background: #f0fdf4;
+  border-left: 4px solid var(--success);
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tip {
+    background: #064e3b;
+    border-left-color: var(--success);
+  }
+}
+
+.tip strong { color: var(--success); }
+
+.note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+.highlight {
+  background: var(--warning);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+
+/* ===== Sessões com guias por idioma, alinhadas em linhas (estilo painel de leitura) ===== */
+body { max-width: 1400px; }
+a.voltar { color: var(--accent); text-decoration: none; font-size: 14px; }
+.barra { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.barra-linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.barra-rotulo { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.indice { display: flex; gap: 6px; overflow-x: auto; padding-top: 8px; scrollbar-width: thin; }
+.chip { flex: 0 0 auto; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--paper); color: var(--text); text-decoration: none; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.g-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.g-tab, .g-multi { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text); font-family: inherit; min-height: 36px; }
+.g-tab:hover, .g-multi:hover { border-color: var(--accent); color: var(--accent); }
+.g-tab[aria-pressed="true"], .g-multi[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sessao { margin-bottom: 28px; scroll-margin-top: 110px; }
+.sessao-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sessao-titulo { margin: 0; font-size: 22px; }
+.comparacao { background: var(--paper); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; font-size: 14px; }
+.comparacao summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.comparacao .table-wrap { overflow-x: auto; }
+
+/* Grade: cada linha de conteúdo atravessa as colunas (idiomas) e começa na mesma altura */
+.rolagem { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.guias { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 12px; row-gap: 0; }
+.sessao.multi .guias { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); }
+.cel { display: none; background: var(--paper); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 0 16px; min-width: 0; }
+.cel.on { display: block; }
+.sessao:not(.multi) .cel.vazia { display: none; }
+.cel.r-first { border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; padding-top: 16px; }
+.cel.pe { border-bottom: 1px solid var(--border); border-radius: 0 0 12px 12px; height: 16px; }
+.cel.k-h2 h2 { margin: 0 0 6px 0; font-size: 18px; }
+.cel.k-h3 { padding-top: 6px; }
+.cel.k-h3 h3 { margin: 10px 0 6px 0; }
+.sessao.multi .cel.k-h3 { border-top: 1px dashed var(--border); padding-top: 8px; }
+.cel > :first-child:not(h2):not(h3) { margin-top: 0; }
+.cel .grammar-table.tl { table-layout: fixed; width: 100%; margin: 0; }
+.cel .grammar-table.tl td, .cel .grammar-table.tl th { overflow-wrap: anywhere; vertical-align: top; }
+.cel .grammar-table.tl + .grammar-table.tl tr:first-child td { border-top: 0; }
+.cel .tl:last-child { margin-bottom: 0; }
+.cel h4 { margin-top: 12px; }
+.sessao.multi .cel .grammar-table { font-size: 13px; }
+.sessao.multi .cel .grammar-table td, .sessao.multi .cel .grammar-table th { padding: 8px 6px; }
+.sessao.multi .cel { padding-left: 12px; padding-right: 12px; }
+@media (max-width: 800px) {
+  body { padding: 12px 16px; }
+  .sessao-titulo { font-size: 19px; }
+  .sessao.multi .rolagem { scroll-snap-type: x mandatory; padding-bottom: 6px; }
+  .sessao.multi .guias { grid-template-columns: repeat(var(--cols, 3), min(86vw, 360px)); }
+  .sessao.multi .cel.r-first { scroll-snap-align: start; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="voltar" href="index.html">← Leitor</a>
+  <h1>📚 Guia de Estudos — Gramática Comparada</h1>
+  <p style="color: var(--muted); margin: 8px 0 0 0;">Cada sessão é um tópico com uma guia por idioma. Toque num idioma para ver só ele, ou em ⧉ para ver as guias lado a lado (multiguias), com os subtópicos alinhados na mesma altura.</p>
+</div>
+
+<div class="barra">
+  <div class="barra-linha"><span class="barra-rotulo">Todas as sessões:</span><div class="g-tabs"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉ Multiguias</button></div></div>
+  <nav class="indice" aria-label="Sessões"><a class="chip" href="#s-partes">Partes do Discurso</a><a class="chip" href="#s-verbos">Verbos - Tempos Principais</a><a class="chip" href="#s-auxiliares">Auxiliares de tempo verbal</a><a class="chip" href="#s-adverbio">Advérbio</a><a class="chip" href="#s-artigos">Artigos e Gênero/Número</a><a class="chip" href="#s-pronomes">Pronomes Pessoais</a><a class="chip" href="#s-preposicoes">Preposições Principais</a><a class="chip" href="#s-recursos">Recursos para download</a></nav>
+</div>
+
+<section class="sessao" id="s-partes">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Partes do Discurso</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Partes do Discurso</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Parts of Speech</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Partes del Discurso</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><th>Classe</th><th>Função</th><th>Exemplos</th></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><th>Class</th><th>Function</th><th>Examples</th></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><th>Clase</th><th>Función</th><th>Ejemplos</th></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Substantivo</strong></td><td>Nomeia pessoas, coisas, conceitos</td><td>livro, menina, coragem, amor</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Noun</strong></td><td>Names people, things, ideas</td><td>book, girl, courage, cat</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Sustantivo</strong></td><td>Nombra personas, cosas, conceptos</td><td>libro, niña, valor, gato</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Verbo</strong></td><td>Expressa ação, estado ou fenômeno</td><td>fazer, ser, estar, chover</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Verb</strong></td><td>Expresses action, state, or occurrence</td><td>do, be, have, rain, love</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Verbo</strong></td><td>Expresa acción, estado o fenómeno</td><td>hacer, ser, estar, llover</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Adjetivo</strong></td><td>Modifica ou descreve o substantivo</td><td>bonito, rápido, grande, azul</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Adjective</strong></td><td>Modifies or describes a noun</td><td>beautiful, fast, big, happy</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Adjetivo</strong></td><td>Modifica o describe el sustantivo</td><td>bonito, rápido, grande, azul</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Advérbio</strong></td><td>Modifica verbo, adjetivo ou outro advérbio</td><td>rapidamente, bem, muito, aqui</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Adverb</strong></td><td>Modifies verb, adjective, or another adverb</td><td>quickly, well, very, here</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Adverbio</strong></td><td>Modifica verbo, adjetivo u otro adverbio</td><td>rápidamente, bien, muy, aquí</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Preposição</strong></td><td>Relaciona palavras na frase</td><td>em, de, para, com, por, entre</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Preposition</strong></td><td>Shows relationship between words</td><td>in, of, to, with, by, about</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Preposición</strong></td><td>Relaciona palabras en la oración</td><td>en, de, para, con, por, entre</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Pronome</strong></td><td>Substitui ou representa o substantivo</td><td>eu, você, ele, meu, que, se</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Pronoun</strong></td><td>Replaces or represents a noun</td><td>I, you, he, her, who, this</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Pronombre</strong></td><td>Reemplaza o representa el sustantivo</td><td>yo, tú, él, mi, que, se</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Conjunção</strong></td><td>Liga palavras ou orações</td><td>e, ou, mas, porém, se, porque</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Conjunction</strong></td><td>Connects words or clauses</td><td>and, or, but, if, because, while</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><tr><td><strong>Conjunción</strong></td><td>Conecta palabras u oraciones</td><td>y, o, pero, si, porque, mientras</td></tr></table></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-verbos">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Verbos - Tempos Principais</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Verbos - Tempos Principais</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Main Verb Tenses</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Verbos - Tiempos Principales</h2></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Presente do Indicativo (ação atual/habitual)</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Present Simple (current facts, habits)</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Presente del Indicativo (acción actual/habitual)</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="verb-box"><div class="verb-header">Verbos Regulares</div><div class="rule-box"><strong>-AR (falar):</strong> Eu falo | Tu falas | Ele/ela fala | Nós falamos | Vós falais | Eles/elas falam</div><div class="rule-box"><strong>-ER (comer):</strong> Eu como | Tu comes | Ele/ela come | Nós comemos | Vós comeis | Eles/elas comem</div><div class="rule-box"><strong>-IR (partir):</strong> Eu parto | Tu partes | Ele/ela parte | Nós partimos | Vós partis | Eles/elas partem</div><div class="example"><div class="example-label">Exemplos</div>"Eu falo português" | "Eles comem pão" | "Nós partimos cedo"</div></div></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="verb-header">Regular Pattern</div><div class="rule-box"><strong>I/You/We/They:</strong> work | <strong>He/She/It:</strong> work<span class="highlight">s</span></div><div class="example"><div class="example-label">Examples</div>"I work here" | "She works here" | "They play football"</div></div></div><div class="cel k-i" data-lang="es" lang="es"><div class="verb-box"><div class="verb-header">Verbos Regulares</div><div class="rule-box"><strong>-AR (hablar):</strong> Yo hablo | Tú hablas | Él/ella habla | Nosotros hablamos | Vosotros habláis | Ellos/ellas hablan</div><div class="rule-box"><strong>-ER (comer):</strong> Yo como | Tú comes | Él/ella come | Nosotros comemos | Vosotros coméis | Ellos/ellas comen</div><div class="rule-box"><strong>-IR (vivir):</strong> Yo vivo | Tú vives | Él/ella vive | Nosotros vivimos | Vosotros vivís | Ellos/ellas viven</div><div class="example"><div class="example-label">Ejemplos</div>"Yo hablo español" | "Ellos comen pan" | "Nosotros vivimos aquí"</div></div></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Present Continuous (action happening now)</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="rule-box"><strong>Structure:</strong> <span class="highlight">am/is/are + -ing</span></div><div class="rule-box"><strong>I:</strong> <span class="highlight">am</span> working | <strong>You/We/They:</strong> <span class="highlight">are</span> working | <strong>He/She/It:</strong> <span class="highlight">is</span> working</div><div class="example"><div class="example-label">Examples</div>"I am studying now" | "He is sleeping" | "They are playing"</div></div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Pretérito Perfeito (ação passada concluída)</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Past Simple (action completed in past)</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Pretérito Indefinido (acción pasada concluída)</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="verb-box"><div class="rule-box"><strong>-AR (falei):</strong> Eu falei | Tu falaste | Ele/ela falou | Nós falámos/falamos | Vós falastes | Eles/elas falaram</div><div class="rule-box"><strong>-ER (comi):</strong> Eu comi | Tu comeste | Ele/ela comeu | Nós comemos | Vós comestes | Eles/elas comeram</div><div class="rule-box"><strong>-IR (parti):</strong> Eu parti | Tu partiste | Ele/ela partiu | Nós partimos | Vós partistes | Eles/elas partiram</div><div class="example"><div class="example-label">Exemplos</div>"Eu falei com ele ontem" | "Eles comeram tudo" | "Nós partimos cedo"</div></div></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="verb-header">Regular Verbs</div><div class="rule-box"><strong>Add -ed:</strong> work → work<span class="highlight">ed</span> | play → play<span class="highlight">ed</span> | study → stud<span class="highlight">ied</span></div><div class="rule-box"><strong>Negative/Questions:</strong> <span class="highlight">did</span> + verb (base form) | "I did<span class="highlight">n't</span> go" | "Did you go?"</div><div class="example"><div class="example-label">Examples</div>"I worked yesterday" | "She studied hard" | "They didn't come"</div></div></div><div class="cel k-i" data-lang="es" lang="es"><div class="verb-box"><div class="rule-box"><strong>-AR (hablé):</strong> Yo hablé | Tú hablaste | Él/ella habló | Nosotros hablamos | Vosotros hablasteis | Ellos/ellas hablaron</div><div class="rule-box"><strong>-ER/-IR (comí/viví):</strong> Yo comí/viví | Tú comiste/viviste | Él/ella comió/vivió | Nosotros comimos/vivimos | Vosotros comisteis/vivisteis | Ellos/ellas comieron/vivieron</div><div class="example"><div class="example-label">Ejemplos</div>"Ayer hablé con Juan" | "Comimos en un restaurante" | "Vivieron en Madrid cinco años"</div></div></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Past Simple - Irregular Verbs (ESSENTIAL for Vestibular)</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:22%"><col style="width:22%"><col style="width:38%"></colgroup><tr><th>Base Form</th><th>Past Simple</th><th>Meaning</th><th>Example</th></tr></table><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:22%"><col style="width:22%"><col style="width:38%"></colgroup><tr><td><strong>go</strong></td><td><span class="highlight">went</span></td><td>ir</td><td>"I went to school"</td></tr><tr><td><strong>be</strong></td><td><span class="highlight">was/were</span></td><td>ser/estar</td><td>"It was good" | "They were happy"</td></tr><tr><td><strong>have</strong></td><td><span class="highlight">had</span></td><td>ter/haver</td><td>"I had a car"</td></tr><tr><td><strong>see</strong></td><td><span class="highlight">saw</span></td><td>ver</td><td>"I saw him yesterday"</td></tr><tr><td><strong>come</strong></td><td><span class="highlight">came</span></td><td>vir</td><td>"She came early"</td></tr><tr><td><strong>get</strong></td><td><span class="highlight">got</span></td><td>obter/ficar</td><td>"I got tired"</td></tr><tr><td><strong>make</strong></td><td><span class="highlight">made</span></td><td>fazer</td><td>"She made a cake"</td></tr><tr><td><strong>know</strong></td><td><span class="highlight">knew</span></td><td>conhecer/saber</td><td>"I knew him well"</td></tr><tr><td><strong>think</strong></td><td><span class="highlight">thought</span></td><td>pensar</td><td>"I thought it was true"</td></tr><tr><td><strong>take</strong></td><td><span class="highlight">took</span></td><td>levar/pegar</td><td>"He took the bus"</td></tr><tr><td><strong>give</strong></td><td><span class="highlight">gave</span></td><td>dar</td><td>"I gave him money"</td></tr><tr><td><strong>find</strong></td><td><span class="highlight">found</span></td><td>encontrar</td><td>"She found the key"</td></tr><tr><td><strong>say</strong></td><td><span class="highlight">said</span></td><td>dizer</td><td>"He said hello"</td></tr><tr><td><strong>tell</strong></td><td><span class="highlight">told</span></td><td>contar/dizer</td><td>"I told him the truth"</td></tr><tr><td><strong>buy</strong></td><td><span class="highlight">bought</span></td><td>comprar</td><td>"We bought a house"</td></tr><tr><td><strong>bring</strong></td><td><span class="highlight">brought</span></td><td>trazer</td><td>"She brought flowers"</td></tr><tr><td><strong>drink</strong></td><td><span class="highlight">drank</span></td><td>beber</td><td>"I drank coffee"</td></tr><tr><td><strong>eat</strong></td><td><span class="highlight">ate</span></td><td>comer</td><td>"They ate lunch"</td></tr><tr><td><strong>write</strong></td><td><span class="highlight">wrote</span></td><td>escrever</td><td>"I wrote a letter"</td></tr></table></div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Pretérito Perfecto (acción pasada reciente)</h3></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="verb-box"><div class="rule-box"><strong>Structure:</strong> <span class="highlight">he/has/ha + participio</span> (he hablado, has comido, ha vivido)</div><div class="example"><div class="example-label">Ejemplos</div>"Yo he hablado con él" | "Ella ha comido ya" | "Nosotros hemos vivido aquí"</div></div></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Pretérito Imperfeito (ação passada contínua/habitual)</h3></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Pretérito Imperfecto (acción pasada habitual/continua)</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="verb-box"><div class="rule-box"><strong>-AVA / -IA:</strong> Eu falava/comia | Tu falávas/comias | Ele/ela falava/comia | Nós falávamos/comíamos | Vós falávais/comíeis | Eles/elas falavam/comiam</div><div class="example"><div class="example-label">Exemplos</div>"Quando criança, eu comia muito doce" | "Eles falavam sempre sobre isso"</div></div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="verb-box"><div class="rule-box"><strong>-ABA / -ÍA:</strong> Yo hablaba/comía | Tú hablabas/comías | Él/ella hablaba/comía | Nosotros hablábamos/comíamos | Vosotros hablabais/comíais | Ellos/ellas hablaban/comían</div><div class="example"><div class="example-label">Ejemplos</div>"Cuando niño, yo comía mucho dulce" | "Ellos hablaban siempre de eso"</div></div></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Futuro do Presente (ação futura)</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Future - Will vs. Going to</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Futuro Simple (acción futura)</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="verb-box"><div class="rule-box"><strong>Terminação -EI/-Á/-EMOS:</strong> Eu falarei | Tu falarás | Ele/ela falará | Nós falaremos | Vós falareis | Eles/elas falarão</div><div class="example"><div class="example-label">Exemplos</div>"Eu falarei com você amanhã" | "Eles comerão na sua casa"</div></div></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="verb-header">WILL (Decision at moment of speaking / prediction)</div><div class="rule-box"><strong>Structure:</strong> <span class="highlight">will + base verb</span><br><strong>Negative:</strong> <span class="highlight">will not (won&#39;t) + base verb</span></div><div class="example"><div class="example-label">Examples</div>"I will help you" (decision now) | "It will rain tomorrow" (prediction)</div></div><div class="verb-box"><div class="verb-header">GOING TO (Plan/intention / obvious future)</div><div class="rule-box"><strong>Structure:</strong> <span class="highlight">am/is/are + going to + base verb</span></div><div class="example"><div class="example-label">Examples</div>"I am going to study" (plano) | "Look! It's going to rain!" (óbvio pelo céu)</div></div></div><div class="cel k-i" data-lang="es" lang="es"><div class="verb-box"><div class="rule-box"><strong>Terminación -É/-Á/-EMOS:</strong> Yo hablaré | Tú hablarás | Él/ella hablará | Nosotros hablaremos | Vosotros hablaréis | Ellos/ellas hablarán</div><div class="example"><div class="example-label">Ejemplos</div>"Mañana hablaré contigo" | "Comeremos en casa" | "Vivirán en Barcelona"</div></div></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Would (Conditional / Past Habit)</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="verb-header">Conditional (hypothetical/polite)</div><div class="rule-box"><strong>Structure:</strong> <span class="highlight">would + base verb</span></div><div class="example"><div class="example-label">Examples</div>"I would go if I could" (hypothetical) | "Would you help me?" (polite)</div></div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Do / Does (Auxiliary Verb - Very Important!)</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="verb-box"><div class="verb-header">Uses of DO/DOES</div><div class="rule-box"><strong>1. Emphasis:</strong> "I <span class="highlight">do</span> like it" (sim, eu gosto muito)<br><strong>2. Negation:</strong> "I <span class="highlight">do</span>n't like it" | "He <span class="highlight">does</span>n't like it"<br><strong>3. Questions:</strong> "<span class="highlight">Do</span> you like it?" | "<span class="highlight">Does</span> he like it?"</div><div class="example"><div class="example-label">Rule</div>Present tense: I/You/We/They = <span class="highlight">do</span> | He/She/It = <span class="highlight">does</span></div></div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Particípio (forma de adjetivo/auxiliar)</h3></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Regulares:</strong> fal<span class="highlight">ado</span> | com<span class="highlight">ido</span> | part<span class="highlight">ido</span></div><div class="rule-box"><strong>Irregulares:</strong> fazer → <span class="highlight">feito</span> | vir → <span class="highlight">vindo</span> | ver → <span class="highlight">visto</span> | abrir → <span class="highlight">aberto</span></div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-auxiliares">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Auxiliares de tempo verbal</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  <details class="comparacao"><summary>🔎 Comparação rápida PT · EN · ES</summary><div class="table-wrap">
+<table class="grammar-table">
+  <tr><th>Ideia</th><th>🇧🇷 PT</th><th>🇬🇧 EN</th><th>🇪🇸 ES</th></tr>
+  <tr><td><strong>Tempo composto</strong></td><td><b>ter/haver</b> + particípio</td><td><b>have</b> + past participle</td><td><b>haber</b> + participio</td></tr>
+  <tr><td><strong>Ação em curso</strong></td><td><b>estar</b> + gerúndio</td><td><b>be</b> + -ing</td><td><b>estar</b> + gerundio</td></tr>
+  <tr><td><strong>Futuro próximo</strong></td><td><b>ir</b> + infinitivo</td><td><b>be going to</b> / <b>will</b></td><td><b>ir a</b> + infinitivo</td></tr>
+  <tr><td><strong>Pergunta / negação</strong></td><td>—</td><td><b>do / does / did</b></td><td>—</td></tr>
+  <tr><td><strong>Voz passiva</strong></td><td><b>ser</b> + particípio</td><td><b>be</b> + past participle</td><td><b>ser</b> + participio</td></tr>
+</table>
+<div class="note">O inglês usa mais auxiliares (inclusive para perguntar e negar); PT e ES têm auxiliares nos tempos compostos, contínuos e no futuro próximo.</div>
+</div></details>
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Verbos Auxiliares</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Auxiliary Verbs</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Verbos Auxiliares</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Ideia-chave:</strong> numa locução verbal, o <b>auxiliar</b> é conjugado (tempo, pessoa) e o <b>principal</b> fica em forma nominal: infinitivo, gerúndio ou particípio.</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>Key idea:</strong> the <b>auxiliary</b> carries the tense and person; the <b>main verb</b> stays in base form, -ing or past participle.</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Idea clave:</strong> el <b>auxiliar</b> se conjuga y el <b>verbo principal</b> queda en infinitivo, gerundio o participio.</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><th>Auxiliar</th><th>Estrutura</th><th>Exemplo</th></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><th>Auxiliary</th><th>Used for</th><th>Example</th></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><th>Auxiliar</th><th>Estructura</th><th>Ejemplo</th></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>ter / haver</strong></td><td>+ particípio → tempos compostos</td><td>tenho estudado · tinha (havia) estudado · terei estudado</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>have / has / had</strong> + past participle</td><td>perfect tenses</td><td>I have studied. · She had studied.</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>haber</strong></td><td>+ participio → tiempos compuestos</td><td>he estudiado · había estudiado · habré estudiado</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>estar</strong></td><td>+ gerúndio → ação em curso</td><td>estou estudando · estava estudando</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>be</strong> + -ing</td><td>continuous tenses</td><td>He is studying. · We were studying.</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>estar</strong></td><td>+ gerundio → acción en curso</td><td>estoy estudiando · estaba estudiando</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>ir</strong></td><td>+ infinitivo → futuro próximo</td><td>vou estudar (mais usado que "estudarei")</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>will</strong></td><td>future (decision, prediction)</td><td>I will study tomorrow.</td></tr></table><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>be going to</strong></td><td>future (plan, evidence)</td><td>I'm going to study tonight.</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>ir a</strong></td><td>+ infinitivo → futuro próximo</td><td>voy <b>a</b> estudiar</td></tr></table></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>would</strong></td><td>conditional</td><td>I would study if I had time.</td></tr></table></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>do / does / did</strong></td><td>questions and negatives in simple tenses</td><td>Do you study? · She doesn't study. · Did they study?</td></tr></table></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>ser</strong></td><td>+ particípio → voz passiva</td><td>o livro <b>foi lido</b> por todos</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>be</strong> + past participle</td><td>passive voice</td><td>The book was written in 1900.</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup><tr><td><strong>ser</strong></td><td>+ participio → voz pasiva</td><td>el libro <b>fue leído</b> por todos</td></tr></table></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Tempos compostos mais cobrados</h3></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Pretérito perfecto compuesto</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="example"><div class="example-label">Pretérito perfeito composto — ação repetida/contínua até agora</div>Tenho estudado muito este mês.</div><div class="example"><div class="example-label">Mais-que-perfeito composto — passado anterior a outro passado</div>Quando cheguei, o ônibus já <b>tinha saído</b>.</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="example"><div class="example-label">Pasado ligado al presente (hoy, esta semana, este año)</div>Hoy <b>he estudiado</b> mucho. · ¿<b>Has visto</b> a Juan?</div></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Modal auxiliaries</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="example"><div class="example-label">Always followed by the base verb, no "to", no -s</div>can · could · may · might · must · should — She <b>can swim</b> (not "cans swims").</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Pegadinhas</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Exam traps</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Trampas para brasileños</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>"Tenho estudado" ≠ "estudei":</strong> o composto indica repetição até o presente. Por isso o <i>have studied</i> do inglês muitas vezes se traduz por <b>"estudei"</b>, não por "tenho estudado".</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="tip"><strong>Present perfect ≠ "tenho feito":</strong> <i>I have finished</i> = <b>terminei</b> / já terminei. Clues: already, yet, ever, never, since, for.</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>Solo HABER forma los compuestos:</strong> <b>he</b> estudiado — nunca "<s>tengo estudiado</s>".</div></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="tip"><strong>Only the auxiliary changes:</strong> Did she <b>go</b>? (not "Did she went?") · He doesn't <b>like</b> (not "doesn't likes").</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>Nada entre haber y el participio, y el participio no varía:</strong> Las <b>he visto</b> (no "he las visto", no "he vistas").</div></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>No falte la "a":</strong> voy <b>a</b> estudiar — nunca "<s>voy estudiar</s>".</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>Haver impessoal:</strong> no sentido de existir não vai ao plural — <b>Havia</b> muitos alunos. Mas como auxiliar concorda: Eles <b>haviam</b> saído.</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>hay × he:</strong> <b>hay</b> = existe(m) (Hay muchos libros); <b>he</b> = auxiliar (He leído el libro).</div></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="tip"><strong>Short answers repeat the auxiliary:</strong> Do you like it? — Yes, I <b>do</b>. · Has she left? — No, she <b>hasn't</b>.</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-adverbio">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Advérbio</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  <details class="comparacao"><summary>🔎 Comparação rápida PT · EN · ES</summary><div class="table-wrap">
+<table class="grammar-table">
+  <tr><th></th><th>🇧🇷 PT</th><th>🇬🇧 EN</th><th>🇪🇸 ES</th></tr>
+  <tr><td><strong>Formação</strong></td><td>feminino + <b>-mente</b><br>(rápida → rapidamente)</td><td>adjetivo + <b>-ly</b><br>(quick → quickly)</td><td>femenino + <b>-mente</b><br>(rápida → rápidamente)</td></tr>
+  <tr><td><strong>Varia?</strong></td><td>Não (invariável)</td><td>Não</td><td>No (invariable)</td></tr>
+  <tr><td><strong>Pegadinha</strong></td><td><i>meio</i> e <i>bastante</i></td><td><i>hardly</i>, <i>lately</i></td><td><i>muy</i> × <i>mucho</i></td></tr>
+</table>
+</div></details>
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Advérbio</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Adverbs</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Adverbio</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Definição:</strong> palavra <b>invariável</b> que modifica o verbo, o adjetivo ou outro advérbio, indicando circunstância (lugar, tempo, modo, intensidade…).</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>Definition:</strong> a word that modifies a verb, an adjective or another adverb. It answers <i>how? where? when? how often? how much?</i></div></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Definición:</strong> palabra <b>invariable</b> que modifica al verbo, al adjetivo o a otro adverbio, indicando circunstancia.</div></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Formação com -mente</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Formation with -ly</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Formación con -mente</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="example"><div class="example-label">Sobre a forma feminina do adjetivo</div>rápida → rapidamente · calma → calmamente</div></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><th>Rule</th><th>Example</th></tr></table><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td>adjective + <b>-ly</b></td><td>quick → quickly, careful → carefully</td></tr><tr><td>-y → <b>-ily</b></td><td>happy → happily, easy → easily</td></tr><tr><td>-le → <b>-ly</b></td><td>gentle → gently, simple → simply</td></tr><tr><td>-ic → <b>-ically</b></td><td>basic → basically</td></tr><tr><td><b>Irregular</b></td><td>good → <b>well</b>; fast, hard, late, early = same form</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><div class="example"><div class="example-label">Sobre la forma femenina del adjetivo</div>rápida → rápidamente · fácil → fácilmente (¡conserva la tilde!)</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>Vários em -mente seguidos:</strong> só o último leva o sufixo — falou <b>lenta e calmamente</b>.</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>Varios seguidos:</strong> solo el último lleva -mente — habló <b>clara y concisamente</b>.</div></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Classificação</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Types</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Clasificación</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><th>Tipo</th><th>Exemplos</th></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><th>Type</th><th>Examples</th></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><th>Tipo</th><th>Ejemplos</th></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Lugar</strong></td><td>aqui, ali, lá, perto, longe, dentro, abaixo</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Place</strong></td><td>here, there, everywhere, abroad</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Lugar</strong></td><td>aquí, allí, cerca, lejos, encima, debajo</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Tempo</strong></td><td>hoje, ontem, amanhã, já, ainda, sempre, logo</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Time</strong></td><td>now, today, yet, already, soon</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Tiempo</strong></td><td>hoy, ayer, ya, todavía / aún, siempre, luego</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Modo</strong></td><td>bem, mal, assim, depressa, -mente (calmamente)</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Manner</strong></td><td>slowly, well, badly, carefully</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Modo</strong></td><td>bien, mal, así, despacio, -mente</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Intensidade</strong></td><td>muito, pouco, bastante, tão, demais, meio</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Degree</strong></td><td>very, too, quite, enough, extremely</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Cantidad</strong></td><td>muy, mucho, poco, bastante, demasiado</td></tr></table></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Frequency</strong></td><td>always › usually › often › sometimes › rarely › never</td></tr></table></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Afirmação</strong></td><td>sim, certamente, realmente</td></tr></table></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Afirmación</strong></td><td>sí, también, claro</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Negação</strong></td><td>não, nunca, jamais, tampouco</td></tr></table></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Negación</strong></td><td>no, nunca, jamás, tampoco</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Dúvida</strong></td><td>talvez, provavelmente, acaso</td></tr></table></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><td><strong>Duda</strong></td><td>quizá(s), acaso, tal vez</td></tr></table></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Locução adverbial</h3></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="example"><div class="example-label">Duas ou mais palavras com valor de advérbio</div>às pressas, de repente, sem dúvida, à noite, de vez em quando</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Position (very common in exams)</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="example"><div class="example-label">Frequency: before the main verb, after "be"</div>She <b>always</b> arrives late. · She is <b>always</b> late.</div><div class="example"><div class="example-label">"Enough" comes after the adjective</div>He is old <b>enough</b> to drive.</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Grau</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Comparison</h3></div><div class="cel k-h3 vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="example"><div class="example-label">Comparativo e superlativo</div>Cheguei <b>mais cedo que</b> você. · Acordei <b>cedíssimo</b> / <b>muito cedo</b>.</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="example"><div class="example-label">Comparative / superlative</div>more carefully · faster · <b>well → better → best</b> · <b>badly → worse → worst</b></div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3 vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-h3 vazia" data-lang="en" lang="en"></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Muy × Mucho (clásico de vestibular)</h3></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:55%"><col style="width:45%"></colgroup><tr><th>Uso</th><th>Ejemplo</th></tr></table><table class="grammar-table tl"><colgroup><col style="width:55%"><col style="width:45%"></colgroup><tr><td><b>muy</b> + adjetivo / adverbio</td><td>muy <b>rápido</b>, muy <b>bien</b></td></tr><tr><td>verbo + <b>mucho</b></td><td>trabaja <b>mucho</b></td></tr><tr><td><b>mucho</b> + más, menos, mejor, peor, mayor, menor</td><td><b>mucho mejor</b> (nunca "muy mejor")</td></tr><tr><td>sola, al final de la respuesta → <b>mucho</b></td><td>—¿Estás cansado? —<b>Mucho</b>.</td></tr></table></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Pegadinhas de vestibular</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Exam traps</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Falsos amigos</h3></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="tip"><strong>hard ≠ hardly:</strong> She works <b>hard</b> (trabalha muito). She <b>hardly</b> works (quase não trabalha).</div><div class="tip"><strong>late ≠ lately:</strong> He arrived <b>late</b> (tarde). I haven't seen him <b>lately</b> (ultimamente).</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="tip"><strong>todavía</strong> = ainda · <strong>luego</strong> = depois · <strong>apenas</strong> = mal, quase não · <strong>aún</strong> (con tilde) = ainda · <strong>aun</strong> (sin tilde) = até, inclusive.</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>"Meio" advérbio não varia:</strong> Ela está <b>meio</b> cansada (não "meia"). Varia só como numeral: <i>meia</i> hora.</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>"Bastante":</strong> advérbio → invariável (eles estudam <b>bastante</b>); adjetivo → varia (<b>bastantes</b> livros = muitos livros).</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="tip"><strong>Adjetivo com valor de advérbio:</strong> fica invariável — Eles falaram <b>alto</b>; Elas custam <b>caro</b>.</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="tip"><strong>Linking adverbs (reading):</strong> <b>however</b> = no entanto · <b>therefore</b> = portanto · <b>moreover / furthermore</b> = além disso · <b>nevertheless</b> = mesmo assim · <b>otherwise</b> = caso contrário.</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-artigos">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Artigos e Gênero/Número</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Artigos e Gênero/Número</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Articles &amp; Countable/Uncountable</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Artículos y Género/Número</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><th>Tipo</th><th>Singular Masc</th><th>Singular Fem</th><th>Plural Masc</th><th>Plural Fem</th></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:30%"><col style="width:38%"><col style="width:32%"></colgroup><tr><th>Type</th><th>Usage</th><th>Examples</th></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><th>Tipo</th><th>Sing. Masc</th><th>Sing. Fem</th><th>Plural Masc</th><th>Plural Fem</th></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><td><strong>Definido</strong></td><td>o</td><td>a</td><td>os</td><td>as</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:30%"><col style="width:38%"><col style="width:32%"></colgroup><tr><td><strong>The (Definite)</strong></td><td>Known/specific noun (both singular &amp; plural)</td><td><em>the</em> book | <em>the</em> books | <em>the</em> water</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><td><strong>Definido</strong></td><td>el</td><td>la</td><td>los</td><td>las</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><td><strong>Indefinido</strong></td><td>um</td><td>uma</td><td>uns</td><td>umas</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:30%"><col style="width:38%"><col style="width:32%"></colgroup><tr><td><strong>A / An (Indefinite)</strong></td><td>Unknown/general noun (only singular)</td><td><em>a</em> book | <em>an</em> apple | <em>a</em> university</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><tr><td><strong>Indefinido</strong></td><td>un</td><td>una</td><td>unos</td><td>unas</td></tr></table></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:30%"><col style="width:38%"><col style="width:32%"></colgroup><tr><td><strong>Zero Article</strong></td><td>General plural or uncountable nouns</td><td>books, water, love, information</td></tr></table></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-h3" data-lang="pt" lang="pt-BR"><h3>Formação do Plural</h3></div><div class="cel k-h3" data-lang="en" lang="en"><h3>Plural Forms</h3></div><div class="cel k-h3" data-lang="es" lang="es"><h3>Formación del Plural</h3></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Regra Geral:</strong> Adiciona-se <span class="highlight">-s</span> | livro → livros | mesa → mesas</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>Regular (add -s):</strong> cat → cats | dog → dogs | book → books</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Regla General:</strong> Se añade <span class="highlight">-s</span> | libro → libros | mesa → mesas | casa → casas</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Palavras terminadas em -r, -s, -x, -z:</strong> Adiciona-se <span class="highlight">-es</span> | flor → flores | pais → países | caixa → caixas</div></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>-sh, -ch, -x, -z (add -es):</strong> dish → dishes | church → churches | box → boxes | buzz → buzzes</div></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Palabras terminadas en -s (sílaba tónica):</strong> Se añade <span class="highlight">-es</span> | autobús → autobuses | país → países</div></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Palabras terminadas en -z:</strong> Se cambia a <span class="highlight">-ces</span> | lápiz → lápices | luz → luces | voz → voces</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Palavras terminadas em -ão:</strong> Muda para <span class="highlight">-ões</span> (maioria) | coração → corações | mão → mãos (exceção)</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><div class="rule-box"><strong>Palabras terminadas en -ión:</strong> Se añade <span class="highlight">-es</span> | canción → canciones | acción → acciones</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="rule-box"><strong>Palavras terminadas em -al, -el, -il, -ol, -ul:</strong> Muda para <span class="highlight">-ais, -eis, -is, -ois, -uis</span> | animal → animais | papel → papéis | lápis → lápis (invariável)</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>-consonant + y (change to -ies):</strong> baby → babies | city → cities | library → libraries</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>-f / -fe (change to -ves):</strong> leaf → leaves | wife → wives | knife → knives | half → halves</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><div class="rule-box"><strong>Irregular (MEMORIZE!):</strong> man → men | woman → women | child → children | person → people | tooth → teeth | foot → feet | mouse → mice | goose → geese</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-pronomes">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Pronomes Pessoais</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Pronomes Pessoais</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Pronouns &amp; Possessives</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Pronombres Personales</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><th>Reto</th><th>Oblíquo</th><th>Possessivo</th><th>Reflexivo</th></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><th>Subject</th><th>Object</th><th>Possessive Adj.</th><th>Possessive Pronoun</th><th>Reflexive</th></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><th>Sujeto</th><th>Objeto Directo</th><th>Objeto Indirecto</th><th>Posesivo</th><th>Reflexivo</th></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Eu</td><td>me, mim, comigo</td><td>meu(s), minha(s)</td><td>me</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><td>I</td><td>me</td><td>my</td><td>mine</td><td>myself</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>yo</td><td>me</td><td>me</td><td>mi(s), mío(s), mía(s)</td><td>me</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Tu</td><td>te, ti, contigo</td><td>teu(s), tua(s)</td><td>te</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><td>You</td><td>you</td><td>your</td><td>yours</td><td>yourself</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>tú</td><td>te</td><td>te</td><td>tu(s), tuyo(s), tuya(s)</td><td>te</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Ele/Ela</td><td>o(a), lhe, si</td><td>seu(s), sua(s)</td><td>se</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><td>He</td><td>him</td><td>his</td><td>his</td><td>himself</td></tr><tr><td>She</td><td>her</td><td>her</td><td>hers</td><td>herself</td></tr><tr><td>It</td><td>it</td><td>its</td><td>its</td><td>itself</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>él/ella</td><td>lo/la</td><td>le</td><td>su(s), suyo(s), suya(s)</td><td>se</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Nós</td><td>nos, conosco</td><td>nosso(s), nossa(s)</td><td>nos</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><td>We</td><td>us</td><td>our</td><td>ours</td><td>ourselves</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>nosotros/as</td><td>nos</td><td>nos</td><td>nuestro(s), nuestra(s)</td><td>nos</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Vós</td><td>vos, convosco</td><td>vosso(s), vossa(s)</td><td>vos</td></tr></table></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>vosotros/as</td><td>os</td><td>os</td><td>vuestro(s), vuestra(s)</td><td>os</td></tr></table></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><table class="grammar-table tl"><colgroup><col style="width:22%"><col style="width:30%"><col style="width:28%"><col style="width:20%"></colgroup><tr><td>Eles/Elas</td><td>os(as), lhes, si</td><td>seu(s), sua(s)</td><td>se</td></tr></table></div><div class="cel k-i" data-lang="en" lang="en"><table class="grammar-table tl"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><tr><td>They</td><td>them</td><td>their</td><td>theirs</td><td>themselves</td></tr></table></div><div class="cel k-i" data-lang="es" lang="es"><table class="grammar-table tl"><colgroup><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:30%"><col style="width:16%"></colgroup><tr><td>ellos/ellas</td><td>los/las</td><td>les</td><td>su(s), suyo(s), suya(s)</td><td>se</td></tr></table></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-preposicoes">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Preposições Principais</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>Preposições Principais</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>Prepositions of Time, Place &amp; Movement</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>Preposiciones Principales</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><h4>Tempo</h4><div class="example"><strong>em:</strong> em maio, em 2024<br><strong>de...a:</strong> de janeiro a março<br><strong>durante:</strong> durante a aula<br><strong>ante(s):</strong> antes de sair</div></div><div class="cel k-i" data-lang="en" lang="en"><h4>Time</h4><div class="example"><strong>at:</strong> at 3 o'clock, at midnight<br><strong>in:</strong> in May, in 2024, in the morning<br><strong>on:</strong> on Monday, on 25th<br><strong>during:</strong> during the class<br><strong>for:</strong> for two hours</div></div><div class="cel k-i" data-lang="es" lang="es"><h4>Tiempo</h4><div class="example"><strong>en:</strong> en mayo, en 2024<br><strong>a:</strong> a las tres, al atardecer<br><strong>de...a:</strong> de enero a marzo<br><strong>durante:</strong> durante la clase<br><strong>antes de:</strong> antes de salir</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><h4>Lugar</h4><div class="example"><strong>em:</strong> em casa, em São Paulo<br><strong>de:</strong> de lá<br><strong>para:</strong> para a escola<br><strong>entre:</strong> entre os livros</div></div><div class="cel k-i" data-lang="en" lang="en"><h4>Place</h4><div class="example"><strong>in:</strong> in the house, in Brazil<br><strong>on:</strong> on the table, on the wall<br><strong>at:</strong> at home, at school<br><strong>under:</strong> under the bed<br><strong>behind:</strong> behind the door</div></div><div class="cel k-i" data-lang="es" lang="es"><h4>Lugar</h4><div class="example"><strong>en:</strong> en casa, en Madrid<br><strong>a:</strong> a la escuela<br><strong>de:</strong> de allá<br><strong>entre:</strong> entre los libros<br><strong>bajo:</strong> bajo la lluvia</div></div><div class="cel k-i vazia" data-lang="pt" lang="pt-BR"></div><div class="cel k-i" data-lang="en" lang="en"><h4>Movement</h4><div class="example"><strong>to:</strong> go to school<br><strong>from:</strong> come from there<br><strong>into:</strong> go into the room<br><strong>out of:</strong> get out of the car<br><strong>across:</strong> walk across the street</div></div><div class="cel k-i vazia" data-lang="es" lang="es"></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><h4>Relação</h4><div class="example"><strong>de:</strong> livro de história<br><strong>com:</strong> falar com alguém<br><strong>por:</strong> feito por mim<br><strong>sob:</strong> sob pressão</div></div><div class="cel k-i" data-lang="en" lang="en"><h4>Relationship</h4><div class="example"><strong>of:</strong> cup of coffee, city of Paris<br><strong>with:</strong> talk with someone<br><strong>by:</strong> written by Shakespeare<br><strong>about:</strong> book about history</div></div><div class="cel k-i" data-lang="es" lang="es"><h4>Relación</h4><div class="example"><strong>de:</strong> libro de historia<br><strong>con:</strong> hablar con alguien<br><strong>por:</strong> hecho por mí<br><strong>sin:</strong> sin dinero<br><strong>sobre:</strong> sobre todo</div></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><h4>Modo</h4><div class="example"><strong>com:</strong> com cuidado<br><strong>de:</strong> de repente<br><strong>em:</strong> em silêncio<br><strong>por:</strong> por enquanto</div></div><div class="cel k-i vazia" data-lang="en" lang="en"></div><div class="cel k-i" data-lang="es" lang="es"><h4>Modo</h4><div class="example"><strong>con:</strong> con cuidado<br><strong>de:</strong> de repente<br><strong>en:</strong> en silencio<br><strong>por:</strong> por ahora<br><strong>según:</strong> según el texto</div></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+<section class="sessao" id="s-recursos">
+  <div class="sessao-head">
+    <h2 class="sessao-titulo">Recursos para download</h2>
+    <div class="g-tabs" role="group" aria-label="Guias"><button class="g-tab" data-lang="pt" aria-pressed="false">🇧🇷 PT</button><button class="g-tab" data-lang="en" aria-pressed="false">🇬🇧 EN</button><button class="g-tab" data-lang="es" aria-pressed="false">🇪🇸 ES</button><button class="g-multi" aria-pressed="false" title="Multiguias: ver idiomas lado a lado">⧉</button></div>
+  </div>
+  
+  <div class="rolagem"><div class="guias">
+    <div class="cel k-h2 r-first" data-lang="pt" lang="pt-BR"><h2>📥 Recursos para Download</h2></div><div class="cel k-h2 r-first" data-lang="en" lang="en"><h2>📥 Resources for Download</h2></div><div class="cel k-h2 r-first" data-lang="es" lang="es"><h2>📥 Recursos para Descargar</h2></div><div class="cel k-i" data-lang="pt" lang="pt-BR"><div class="resource-link"><span>📄</span><a href="https://www.ispsn.org/sites/default/files/documentos-virtuais/pdf/nocoes_basicas_de_gramatica_portuguesa_ple.pdf" target="_blank">Noções Básicas de Gramática Portuguesa (PLE)</a></div><div class="resource-link"><span>📄</span><a href="https://atricon.org.br/wp-content/uploads/2023/09/Guia-gramatical-e-ortografico-da-lingua-portuguesa.pdf" target="_blank">Guia Gramatical e Ortográfico da Língua Portuguesa</a></div></div><div class="cel k-i" data-lang="en" lang="en"><div class="resource-link"><span>📄</span><a href="https://www.espressoenglish.net/wp-content/uploads/2021/08/Basic-English-Grammar-from-Espresso-English.pdf" target="_blank">Basic English Grammar - Espresso English</a></div><div class="resource-link"><span>📄</span><a href="https://www.espressoenglish.net/wp-content/uploads/2012/02/Free-English-Grammar-eBook-Beginner.pdf" target="_blank">Free English Grammar eBook - Beginner Level</a></div><div class="resource-link"><span>🌐</span><a href="https://www.e-grammar.org/" target="_blank">E-Grammar Online (Interactive Exercises)</a></div></div><div class="cel k-i" data-lang="es" lang="es"><div class="resource-link"><span>📄</span><a href="https://www.rae.es/sites/default/files/sala_prensa_dosier_gramatica_2009.pdf" target="_blank">Nueva Gramática de la Lengua Española - RAE</a></div><div class="resource-link"><span>📄</span><a href="https://archive.org/details/nueva-gramatica-basica-de-la-lengua-espanola" target="_blank">Nueva Gramática Básica - Internet Archive</a></div><div class="resource-link"><span>📄</span><a href="https://openbooks.library.umass.edu/gramatica-espanol/" target="_blank">Manual de Gramática Básica - UMass Open</a></div></div><div class="cel pe" data-lang="pt"></div><div class="cel pe" data-lang="en"></div><div class="cel pe" data-lang="es"></div>
+  </div></div>
+</section>
+
+<script>
+(function () {
+  var LANGS = ['pt', 'en', 'es'];
+  var KEY = 'gramatica-guias-v2';
+  var estado = { multi: false, ativo: 'pt', visiveis: ['pt', 'en', 'es'] };
+  try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) estado = Object.assign(estado, s); } catch (e) {}
+  function salvar() { try { localStorage.setItem(KEY, JSON.stringify(estado)); } catch (e) {} }
+  function copia(st) { return { multi: st.multi, ativo: st.ativo, visiveis: st.visiveis.slice() }; }
+  function marcar(box, vis, multi) {
+    box.querySelectorAll('.g-tab').forEach(function (b) { b.setAttribute('aria-pressed', vis.indexOf(b.dataset.lang) >= 0 ? 'true' : 'false'); });
+    box.querySelector('.g-multi').setAttribute('aria-pressed', multi ? 'true' : 'false');
+  }
+  // Cada sessão guarda o próprio estado; a barra do topo aplica em todas.
+  function aplicar(sec, st) {
+    sec._st = st;
+    var vis = st.multi ? st.visiveis : [st.ativo];
+    sec.classList.toggle('multi', st.multi);
+    sec.style.setProperty('--cols', vis.length);
+    sec.querySelectorAll('.cel').forEach(function (c) { c.classList.toggle('on', vis.indexOf(c.dataset.lang) >= 0); });
+    marcar(sec.querySelector('.g-tabs'), vis, st.multi);
+  }
+  function clicarIdioma(st, lang) {
+    if (!st.multi) { st.ativo = lang; return; }
+    var i = st.visiveis.indexOf(lang);
+    if (i >= 0) { if (st.visiveis.length > 1) st.visiveis.splice(i, 1); }
+    else { st.visiveis.push(lang); st.visiveis.sort(function (a, b) { return LANGS.indexOf(a) - LANGS.indexOf(b); }); }
+  }
+  function alternarMulti(st) {
+    st.multi = !st.multi;
+    if (st.multi && st.visiveis.length < 2) st.visiveis = LANGS.slice();
+    if (!st.multi && st.visiveis.indexOf(st.ativo) < 0) st.ativo = st.visiveis[0];
+  }
+  var secoes = document.querySelectorAll('.sessao');
+  var global = document.querySelector('.barra .g-tabs');
+  function aplicarTodas() {
+    secoes.forEach(function (sec) { aplicar(sec, copia(estado)); });
+    marcar(global, estado.multi ? estado.visiveis : [estado.ativo], estado.multi);
+    salvar();
+  }
+  global.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.classList.contains('g-multi')) alternarMulti(estado); else clicarIdioma(estado, b.dataset.lang);
+    aplicarTodas();
+  });
+  secoes.forEach(function (sec) {
+    sec.querySelector('.g-tabs').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var st = copia(sec._st);
+      if (b.classList.contains('g-multi')) alternarMulti(st); else clicarIdioma(st, b.dataset.lang);
+      aplicar(sec, st);
+    });
+  });
+  aplicarTodas();
+})();
+</script>
+
+</body>
+</html>

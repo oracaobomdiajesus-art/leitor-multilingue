@@ -1,0 +1,14 @@
+{
+  "titulo": "Como organizar: GMN separado do estudo bilíngue",
+  "data": "2026-09-29",
+  "paragrafos": [
+    "Você tem razão: esta conversa começou no GMN e virou o projeto do leitor bilíngue. O trabalho em si não se misturou, porque cada coisa ficou num lugar diferente. O que se misturou foi o lugar da conversa e da memória.",
+    "O que ficou separado: o Diretório GMN, com a Central de Textos, as Tags e as Legendas, continua no Notion, só com conteúdo do GMN. A Estante de Leitura e a Central de Recursos são páginas gerais, fora do diretório, e ligam cada item ao seu setor. O leitor bilíngue mora num repositório próprio no GitHub, publicado no Cloudflare, e não tem nada do GMN.",
+    "O que se misturou: este projeto do Claude se chama Diretório GMN, mas a memória dele agora tem uma nota sobre o leitor bilíngue. E a maior parte desta conversa é sobre o leitor, não sobre o GMN.",
+    "Sugestão, passo 1: crie um projeto novo no Claude, por exemplo Estudo Bilíngue ou Leitor e Aulas. Todo assunto do leitor, das aulas e dos livros passa a ser tratado lá, numa conversa com o repositório conectado, para eu conseguir publicar.",
+    "Passo 2: na primeira mensagem do projeto novo, cole um resumo curto do que já existe: o link do leitor, o nome do repositório e as funções prontas. Se quiser, eu escrevo esse resumo para você copiar.",
+    "Passo 3: depois que o projeto novo estiver funcionando, eu apago daqui a nota de memória sobre o leitor, para este projeto guardar só o GMN. Apagar só quando você pedir.",
+    "Passo 4: esta conversa fica reservada para o GMN. Quando surgir assunto do leitor aqui, eu te lembro de levar para o outro projeto.",
+    "Um lembrete: o repositório do leitor ainda está público. Esta aula foi publicada assim mesmo porque não tem nada pessoal. Antes das próximas, vale torná-lo privado no GitHub, em Settings, Danger Zone, Change visibility."
+  ]
+}
