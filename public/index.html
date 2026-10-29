@@ -114,7 +114,11 @@ body.modo-aula .pag { display: none; }
 .or-grav { display: flex; gap: 8px; align-items: center; font-size: 14px; }
 .or-grav button { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); min-width: 40px; height: 34px; cursor: pointer; }
 .tocador { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; width: min(728px, calc(100% - 32px)); box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--paper); box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
-body.com-tocador .estante { padding-bottom: 150px; }
+body.com-tocador .estante { padding-bottom: 280px; }
+.musica-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.musica-ctl select { max-width: 220px; }
+.musica-ctl input[type=range] { width: 110px; }
+.musica-ctl [data-mus-liga][aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .tocador .tc-cab { display: flex; gap: 8px; align-items: center; }
 .tocador .tc-cab b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tocador audio { width: 100%; }
@@ -230,6 +234,7 @@ body.com-tocador .estante { padding-bottom: 150px; }
         <button class="ico" id="alternar" type="button" aria-pressed="false" title="Leitura alternada" aria-label="Leitura alternada entre os idiomas">🔁</button>
         <button class="ico" id="btn-grav" type="button" aria-pressed="false" title="Gravar minha voz" aria-label="Gravar minha voz lendo o texto">🎙</button>
         <button class="ico" id="btn-vozes" type="button" aria-pressed="false" title="Vozes e velocidade" aria-label="Vozes e velocidade">🗣</button>
+        <button class="ico" id="btn-musica" type="button" aria-pressed="false" title="Fundo musical" aria-label="Fundo musical">♪</button>
         <button class="ico" id="btn-avisos" type="button" aria-pressed="true" title="Avisos" aria-label="Mostrar ou ocultar avisos">💬</button>
         <a href="gramatica.html" class="ico" title="Biblioteca de gramática" aria-label="Biblioteca de gramática">📚</a>
         <button class="ico" id="ajuda" type="button" aria-pressed="false" title="Legenda dos botões" aria-label="Legenda dos botões">?</button>
@@ -246,6 +251,7 @@ body.com-tocador .estante { padding-bottom: 150px; }
         <span><b>A− A+</b> tamanho da letra</span>
         <span><b>🔁</b> leitura alternada: cada parágrafo em todos os idiomas, depois o próximo</span>
         <span><b>🎙</b> gravar a sua voz lendo o texto e guardar as gravações</span>
+        <span><b>♪</b> fundo musical enquanto lê ou ouve</span>
         <span><b>🗣</b> vozes, velocidade por idioma e quantas páginas o ⏬ traz</span>
         <span><b>💬</b> mostrar/ocultar a linha de avisos</span>
         <span><b>📚</b> biblioteca de gramática (português, inglês, espanhol)</span>
@@ -269,6 +275,7 @@ body.com-tocador .estante { padding-bottom: 150px; }
     </div>
     <div class="vozes" id="painel-vozes" hidden></div>
     <div class="vozes" id="painel-grav" hidden></div>
+    <div class="vozes" id="painel-musica" hidden></div>
     <div class="status" id="status" hidden><span id="status-txt"></span><button class="fechar" id="fechar-avisos" type="button" title="Ocultar avisos" aria-label="Ocultar avisos">✕</button></div>
 
     <div class="janelas">
@@ -419,6 +426,75 @@ body.com-tocador .estante { padding-bottom: 150px; }
       '<span class="info"><span class="titulo">🙏 ' + escapar(o.titulo || "Oração") + '</span>' +
       '<span class="meta">' + (o.data ? dataCurta(o.data + "T12:00:00") : "") + (o.resumo ? " · " + escapar(o.resumo) : "") + '</span></span></button>';
   }
+  // ---------- Fundo musical (músicas do Drive, via /musica/<id>) ----------
+  var mus = { lista: [], padrao: "", el: null, fade: null, tocando: false,
+    ligada: lerPref("leitor.musica.on", "1") === "1", id: lerPref("leitor.musica.id", ""), vol: parseFloat(lerPref("leitor.musica.vol", "0.15")) || 0.15 };
+  async function carregarMusicas() {
+    try { var r = await fetch("musicas/indice.json", { cache: "no-store" }); if (!r.ok) return; var d = await r.json(); mus.lista = d.musicas || []; mus.padrao = d.padrao || (mus.lista[0] && mus.lista[0].id) || ""; } catch (e) {}
+    if (!mus.lista.some(function (m) { return m.id === mus.id; })) mus.id = mus.padrao;
+  }
+  function musFade(alvo, ms, depois) {
+    clearInterval(mus.fade);
+    var el = mus.el; if (!el) { if (depois) depois(); return; }
+    var ini = el.volume, passos = Math.max(1, Math.round(ms / 50)), i = 0;
+    mus.fade = setInterval(function () {
+      i++; el.volume = Math.max(0, Math.min(1, ini + (alvo - ini) * (i / passos)));
+      if (i >= passos) { clearInterval(mus.fade); if (depois) depois(); }
+    }, 50);
+  }
+  function musTocar(ms) {
+    if (!mus.id) return;
+    if (!mus.el) { mus.el = new Audio(); mus.el.loop = true; mus.el.preload = "auto"; mus.el.addEventListener("error", function () { setStatus("Não consegui tocar a música de fundo agora."); }); }
+    var url = "musica/" + mus.id;
+    if (mus.el.getAttribute("src") !== url) { mus.el.src = url; mus.el.volume = 0; }
+    if (mus.el.paused) mus.el.volume = 0;
+    mus.tocando = true;
+    var p = mus.el.play(); if (p && p.catch) p.catch(function () {});
+    musFade(mus.vol, ms == null ? 3000 : ms);
+    atualizarCtlMusica();
+  }
+  function musParar(ms) {
+    mus.tocando = false; atualizarCtlMusica();
+    if (!mus.el || mus.el.paused) return;
+    musFade(0, ms == null ? 4000 : ms, function () { if (!mus.tocando && mus.el) mus.el.pause(); });
+  }
+  function controlesMusica(comPlay) {
+    var ops = mus.lista.map(function (m) { return '<option value="' + escapar(m.id) + '"' + (m.id === mus.id ? " selected" : "") + ">" + escapar((m.clima ? m.clima + " · " : "") + m.titulo) + "</option>"; }).join("");
+    return '<div class="musica-ctl">' +
+      (comPlay ? '<button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button>"
+               : '<button class="btn" type="button" data-mus-liga aria-pressed="' + (mus.ligada ? "true" : "false") + '">♪ Fundo musical ' + (mus.ligada ? "ligado" : "desligado") + "</button>") +
+      '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select>" +
+      '<label>volume <input type="range" data-mus-vol min="0" max="0.6" step="0.01" value="' + mus.vol + '" aria-label="Volume da música"></label></div>';
+  }
+  function atualizarCtlMusica() {
+    document.querySelectorAll("[data-mus-play]").forEach(function (b) { b.textContent = mus.tocando ? "⏸ Parar música" : "▶ Tocar música"; });
+    document.querySelectorAll("[data-mus-liga]").forEach(function (b) { b.setAttribute("aria-pressed", mus.ligada ? "true" : "false"); b.textContent = "♪ Fundo musical " + (mus.ligada ? "ligado" : "desligado"); });
+    var bm = $("btn-musica"); if (bm) bm.classList.toggle("gravando", false);
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-mus-liga],[data-mus-play]"); if (!b) return;
+    if ("musPlay" in b.dataset) { if (mus.tocando) musParar(1500); else musTocar(2000); return; }
+    mus.ligada = !mus.ligada; gravarPref("leitor.musica.on", mus.ligada ? "1" : "0");
+    var voz = $("tc-audio");
+    if (mus.ligada && voz && !voz.paused) musTocar(2000); else if (!mus.ligada) musParar(1200);
+    atualizarCtlMusica();
+  });
+  document.addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.matches && t.matches("[data-mus-sel]")) {
+      mus.id = t.value; gravarPref("leitor.musica.id", mus.id);
+      document.querySelectorAll("[data-mus-sel]").forEach(function (s) { s.value = mus.id; });
+      if (mus.tocando) { musFade(0, 600, function () { if (mus.el) mus.el.pause(); musTocar(1500); }); }
+    }
+  });
+  document.addEventListener("input", function (ev) {
+    var t = ev.target;
+    if (t.matches && t.matches("[data-mus-vol]")) {
+      mus.vol = parseFloat(t.value) || 0; gravarPref("leitor.musica.vol", String(mus.vol));
+      if (mus.tocando && mus.el) { clearInterval(mus.fade); mus.el.volume = mus.vol; }
+    }
+  });
+
   // ---------- Biblioteca de orações gravadas ----------
   var buscaOr = "", gravPorOracao = {}, abertaOr = null, tocando = null, urlTocando = null;
   async function carregarGravsOracoes() {
@@ -472,7 +548,7 @@ body.com-tocador .estante { padding-bottom: 150px; }
   function tocadorHtml() {
     if (!tocando) return "";
     return '<div class="tocador" id="tocador"><div class="tc-cab"><b>🎧 ' + escapar(tocando.titulo) + '</b><button class="ico" type="button" id="tc-fechar" aria-label="Fechar o tocador">✕</button></div>' +
-      '<audio id="tc-audio" controls autoplay src="' + urlTocando + '"></audio></div>';
+      '<audio id="tc-audio" controls src="' + urlTocando + '"></audio>' + controlesMusica(false) + '</div>';
   }
   function blocoOracoes() {
     if (!oracoes.length) return "";
@@ -490,11 +566,19 @@ body.com-tocador .estante { padding-bottom: 150px; }
     var o = oracoes.find(function (x) { return x.arquivo === arq; }) || {};
     tocando = { arq: arq, k: k, titulo: (o.titulo || "Oração") + (g.nome ? " · " + g.nome : "") };
     $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr();
-    var a = $("tc-audio"); if (a) { try { await a.play(); } catch (e) {} }
+    var a = $("tc-audio"); if (!a) return;
+    var inicio = true;
+    a.addEventListener("play", function () { if (mus.ligada && !inicio) musTocar(1500); });
+    a.addEventListener("pause", function () { if (!a.ended) musParar(800); });
+    a.addEventListener("ended", function () { musParar(5000); });
+    if (mus.ligada && mus.lista.length) { musTocar(3000); await new Promise(function (ok) { setTimeout(ok, 3000); }); }
+    inicio = false;
+    if (tocando && tocando.k === k) { try { await a.play(); } catch (e) {} }
   }
   $("tocador-or").addEventListener("click", function (ev) {
     if (!ev.target.closest("#tc-fechar")) return;
     var a = $("tc-audio"); if (a) a.pause(); if (urlTocando) URL.revokeObjectURL(urlTocando);
+    musParar(800);
     tocando = null; urlTocando = null; this.innerHTML = ""; document.body.classList.remove("com-tocador"); atualizarListaOr();
   });
   $("lista").addEventListener("input", function (ev) {
@@ -961,6 +1045,14 @@ body.com-tocador .estante { padding-bottom: 150px; }
     if (v) u.voice = v;
     u.rate = obterVelocidade(l);
     speechSynthesis.speak(u);
+  });
+  $("btn-musica").addEventListener("click", function () {
+    var abrir = $("painel-musica").hidden;
+    if (abrir) $("painel-musica").innerHTML = '<div class="linha"><b>Fundo musical</b></div>' + (mus.lista.length ? controlesMusica(true) : '<div class="dica">Nenhuma música disponível agora.</div>') +
+      '<div class="dica">A música toca baixinho e em repetição enquanto você lê, ouve (🗣) ou grava (🎙). Na gravação ela não entra, a não ser que o microfone capte o som do aparelho; para gravar só a voz, use fone ou deixe a música parada.</div>';
+    $("painel-musica").hidden = !abrir;
+    this.setAttribute("aria-pressed", abrir ? "true" : "false");
+    if (typeof agendarAlinhar === "function") agendarAlinhar();
   });
   $("btn-vozes").addEventListener("click", function () {
     var abrir = $("painel-vozes").hidden;
@@ -1510,6 +1602,8 @@ body.com-tocador .estante { padding-bottom: 150px; }
     pararAudio();
     pararGravacao();
     $("painel-grav").hidden = true; $("btn-grav").setAttribute("aria-pressed", "false");
+    $("painel-musica").hidden = true; $("btn-musica").setAttribute("aria-pressed", "false");
+    if (!tocando) musParar(1000);
     salvarProgresso(true);
     $("tela-leitor").hidden = true;
     $("tela-estante").hidden = false;
@@ -1719,6 +1813,7 @@ body.com-tocador .estante { padding-bottom: 150px; }
     aulaAtual = await carregarAula();
     oracoes = await carregarOracoes();
     await carregarGravsOracoes();
+    await carregarMusicas();
     renderEstante();
   }
   iniciar();
