@@ -106,7 +106,18 @@ body.modo-aula .pag { display: none; }
 .abas-estante { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
 .aba-est { flex: 1; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 600; font-size: 15px; padding: 10px 6px; color: var(--muted); cursor: pointer; }
 .aba-est.ativo { color: var(--accent); border-bottom-color: var(--accent); }
-.ganho { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.vol-linha { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.vol-nome { min-width: 76px; font-size: 16px; font-weight: 600; }
+.vol-btn { width: 48px; height: 48px; flex: none; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 26px; line-height: 1; cursor: pointer; color: inherit; }
+.vol-btn:active { background: var(--accent-soft); }
+.vol-val { min-width: 54px; text-align: right; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vol-range { flex: 1; min-width: 60px; height: 36px; -webkit-appearance: none; appearance: none; background: transparent; }
+.vol-range::-webkit-slider-runnable-track { height: 10px; border-radius: 5px; background: var(--line); }
+.vol-range::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -10px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.vol-range::-moz-range-track { height: 10px; border-radius: 5px; background: var(--line); }
+.vol-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; }
+.tocador .musica-ctl { font-size: 15px; }
+.tocador .musica-ctl .btn, .tocador .musica-ctl select { min-height: 44px; font-size: 15px; }
 .ganho input { flex: 1; max-width: 220px; }
 .ganho output { min-width: 42px; font-variant-numeric: tabular-nums; }
 .busca-oracoes { height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--paper); font: inherit; width: 100%; box-sizing: border-box; }
@@ -471,10 +482,24 @@ body.com-tocador .estante { padding-bottom: 280px; }
   function aplicarGanho(v) {
     ganho.v = v; gravarPref("leitor.voz.ganho", String(v));
     document.querySelectorAll("audio[data-voz]").forEach(function (a) { var g = ganho.nos.get(a); if (g) g.gain.value = v; });
-    document.querySelectorAll("[data-ganho]").forEach(function (i) { if (+i.value !== v) i.value = v; var o = i.parentNode.querySelector("output"); if (o) o.textContent = Math.round(v * 100) + "%"; });
+    document.querySelectorAll("[data-ganho]").forEach(function (i) { if (+i.value !== v) i.value = v; });
+    document.querySelectorAll('[data-vol-val="voz"]').forEach(function (o) { o.textContent = Math.round(v * 100) + "%"; });
   }
+  function linhaVolume(nome, qual, min, max, passo, v, attr) {
+    return '<div class="vol-linha"><span class="vol-nome">' + nome + '</span>' +
+      '<button class="vol-btn" type="button" data-vol="' + qual + '" data-passo="-' + (qual === "voz" ? 0.1 : 0.05) + '" aria-label="Diminuir volume ' + qual + '">−</button>' +
+      '<input class="vol-range" type="range" ' + attr + ' min="' + min + '" max="' + max + '" step="' + passo + '" value="' + v + '" aria-label="Volume ' + qual + '">' +
+      '<button class="vol-btn" type="button" data-vol="' + qual + '" data-passo="' + (qual === "voz" ? 0.1 : 0.05) + '" aria-label="Aumentar volume ' + qual + '">+</button>' +
+      '<output class="vol-val" data-vol-val="' + qual + '">' + Math.round(v * 100) + "%</output></div>";
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest(".vol-btn"); if (!b) return;
+    var d = parseFloat(b.dataset.passo) || 0;
+    if (b.dataset.vol === "voz") aplicarGanho(Math.max(0, Math.min(3, Math.round((ganho.v + d) * 100) / 100)));
+    else volumeMusica(Math.max(0, Math.min(1, Math.round((mus.vol + d) * 100) / 100)));
+  });
   function controleGanho() {
-    return '<label class="ganho">🔊 Volume da voz <input type="range" data-ganho min="0" max="3" step="0.05" value="' + ganho.v + '" aria-label="Volume da voz"><output>' + Math.round(ganho.v * 100) + "%</output></label>";
+    return linhaVolume("🔊 Voz", "voz", 0, 3, 0.05, ganho.v, 'data-ganho');
   }
   document.addEventListener("play", function (ev) {
     var a = ev.target; if (!a || !a.matches || !a.matches("audio[data-voz]")) return;
@@ -519,8 +544,14 @@ body.com-tocador .estante { padding-bottom: 280px; }
     return '<div class="musica-ctl">' +
       (comPlay ? '<button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button>"
                : '<button class="btn" type="button" data-mus-liga aria-pressed="' + (mus.ligada ? "true" : "false") + '">♪ Fundo musical ' + (mus.ligada ? "ligado" : "desligado") + "</button>") +
-      '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select>" +
-      '<label>♪ Volume da música <input type="range" data-mus-vol min="0" max="0.6" step="0.01" value="' + mus.vol + '" aria-label="Volume da música"></label></div>';
+      '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select></div>" +
+      linhaVolume("♪ Música", "musica", 0, 1, 0.01, mus.vol, "data-mus-vol");
+  }
+  function volumeMusica(v) {
+    mus.vol = v; gravarPref("leitor.musica.vol", String(v));
+    if (mus.tocando && mus.el) { clearInterval(mus.fade); mus.el.volume = v; }
+    document.querySelectorAll("[data-mus-vol]").forEach(function (i) { if (+i.value !== v) i.value = v; });
+    document.querySelectorAll('[data-vol-val="musica"]').forEach(function (o) { o.textContent = Math.round(v * 100) + "%"; });
   }
   function atualizarCtlMusica() {
     document.querySelectorAll("[data-mus-play]").forEach(function (b) { b.textContent = mus.tocando ? "⏸ Parar música" : "▶ Tocar música"; });
@@ -546,8 +577,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
   document.addEventListener("input", function (ev) {
     var t = ev.target;
     if (t.matches && t.matches("[data-mus-vol]")) {
-      mus.vol = parseFloat(t.value) || 0; gravarPref("leitor.musica.vol", String(mus.vol));
-      if (mus.tocando && mus.el) { clearInterval(mus.fade); mus.el.volume = mus.vol; }
+      volumeMusica(parseFloat(t.value) || 0);
     }
   });
 
