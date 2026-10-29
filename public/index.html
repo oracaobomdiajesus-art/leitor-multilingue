@@ -103,6 +103,21 @@ body.modo-aula .pag { display: none; }
 .livro.aula .lombada { background: var(--accent); }
 .livro.oracao .lombada { background: var(--ok); }
 .grupo-oracoes { display: flex; flex-direction: column; gap: 8px; }
+.busca-oracoes { height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--paper); font: inherit; width: 100%; box-sizing: border-box; }
+.or-item { display: flex; gap: 8px; align-items: stretch; }
+.or-item .livro { flex: 1; min-width: 0; }
+.or-play { min-width: 52px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 20px; cursor: pointer; }
+.or-play[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.selo-audio { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.selo-sem { background: transparent; color: var(--muted); font-weight: 400; padding-left: 0; }
+.or-gravs { display: flex; flex-direction: column; gap: 6px; margin: -2px 0 4px 12px; padding-left: 10px; border-left: 2px solid var(--line); }
+.or-grav { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.or-grav button { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); min-width: 40px; height: 34px; cursor: pointer; }
+.tocador { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; width: min(728px, calc(100% - 32px)); box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--paper); box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
+body.com-tocador .estante { padding-bottom: 150px; }
+.tocador .tc-cab { display: flex; gap: 8px; align-items: center; }
+.tocador .tc-cab b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tocador audio { width: 100%; }
 .rotulo-estante { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .jcab .grupo button.ico { min-width: 32px; padding: 0 6px; font-size: 15px; }
 #ajuda[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -173,6 +188,7 @@ body.modo-aula .pag { display: none; }
     <div id="lista" class="livros">
       <div class="vazio">Carregando sua estante…</div>
     </div>
+    <div id="tocador-or"></div>
   </section>
 
   <!-- LEITOR -->
@@ -403,13 +419,95 @@ body.modo-aula .pag { display: none; }
       '<span class="info"><span class="titulo">🙏 ' + escapar(o.titulo || "Oração") + '</span>' +
       '<span class="meta">' + (o.data ? dataCurta(o.data + "T12:00:00") : "") + (o.resumo ? " · " + escapar(o.resumo) : "") + '</span></span></button>';
   }
+  // ---------- Biblioteca de orações gravadas ----------
+  var buscaOr = "", gravPorOracao = {}, abertaOr = null, tocando = null, urlTocando = null;
+  async function carregarGravsOracoes() {
+    gravPorOracao = {};
+    if (!idb || !idb.objectStoreNames.contains("gravacoes")) return;
+    await new Promise(function (ok) {
+      var r = idb.transaction("gravacoes", "readonly").objectStore("gravacoes").openCursor();
+      r.onsuccess = function () {
+        var c = r.result; if (!c) { ok(); return; }
+        var v = c.value || {};
+        if (v.livro && String(v.livro).indexOf("oracoes/") === 0) {
+          var arq = String(v.livro).slice(8);
+          (gravPorOracao[arq] = gravPorOracao[arq] || []).push({ k: c.key, nome: v.nome || "", criadoEm: v.criadoEm, duracao: v.duracao });
+        }
+        c.continue();
+      };
+      r.onerror = function () { ok(); };
+    });
+    Object.keys(gravPorOracao).forEach(function (a) { gravPorOracao[a].sort(function (x, y) { return x.criadoEm < y.criadoEm ? 1 : -1; }); });
+  }
+  function semAcento(t) { return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
+  function nomeGrav(g, i, n) { return g.nome || ("Gravação " + (n - i)); }
+  function itemOracao(o) {
+    var gs = gravPorOracao[o.arquivo] || [];
+    var selo = gs.length ? '<span class="selo-audio">🎧 ' + gs.length + (gs.length > 1 ? " áudios" : " áudio") + '</span>' : '<span class="selo-audio selo-sem">só texto</span>';
+    var html = '<div class="or-item"><button class="livro oracao" type="button" data-oracao="' + escapar(o.arquivo) + '"><span class="lombada"></span>' +
+      '<span class="info"><span class="titulo">🙏 ' + escapar(o.titulo || "Oração") + '</span>' +
+      '<span class="meta">' + (o.data ? dataCurta(o.data + "T12:00:00") : "") + (o.resumo ? " · " + escapar(o.resumo) : "") + selo + '</span></span></button>' +
+      (gs.length ? '<button class="or-play" type="button" data-or-play="' + escapar(o.arquivo) + '" aria-pressed="' + (tocando && tocando.arq === o.arquivo ? "true" : "false") + '" title="Ouvir a gravação mais recente" aria-label="Ouvir gravação de ' + escapar(o.titulo || "oração") + '">▶</button>' : "") + '</div>';
+    if (gs.length > 1) {
+      if (abertaOr === o.arquivo) html += '<div class="or-gravs">' + gs.map(function (g, i) {
+        return '<div class="or-grav"><button type="button" data-or-tocar="' + escapar(g.k) + '" data-arq="' + escapar(o.arquivo) + '" aria-label="Ouvir">▶</button><span>' + escapar(nomeGrav(g, i, gs.length)) + ' · ' + fmtDur(g.duracao || 0) + ' · ' + dataCurta(g.criadoEm) + '</span></div>';
+      }).join("") + '<button class="btn" type="button" data-or-abrir="">Fechar lista</button></div>';
+      else html += '<button class="btn" type="button" data-or-abrir="' + escapar(o.arquivo) + '" style="align-self:flex-start">Ver as ' + gs.length + ' gravações</button>';
+    }
+    return html;
+  }
+  function filtrarOracoes() {
+    var q = semAcento(buscaOr).trim();
+    if (!q) return oracoes;
+    return oracoes.filter(function (o) {
+      var gs = gravPorOracao[o.arquivo] || [];
+      var alvo = semAcento([o.titulo, o.resumo, o.data, o.data ? dataCurta(o.data + "T12:00:00") : ""].concat(gs.map(function (g) { return g.nome; })).join(" "));
+      return q.split(/\s+/).every(function (p) { return alvo.indexOf(p) >= 0; });
+    });
+  }
+  function listaOracoesHtml() {
+    var l = filtrarOracoes();
+    return l.length ? l.map(itemOracao).join("") : '<div class="dica">Nenhuma oração encontrada.</div>';
+  }
+  function tocadorHtml() {
+    if (!tocando) return "";
+    return '<div class="tocador" id="tocador"><div class="tc-cab"><b>🎧 ' + escapar(tocando.titulo) + '</b><button class="ico" type="button" id="tc-fechar" aria-label="Fechar o tocador">✕</button></div>' +
+      '<audio id="tc-audio" controls autoplay src="' + urlTocando + '"></audio></div>';
+  }
   function blocoOracoes() {
     if (!oracoes.length) return "";
-    var antigas = oracoes.slice(1);
-    return '<div class="grupo-oracoes"><div class="rotulo-estante">Orações</div>' + cartaoOracao(oracoes[0]) +
-      (antigas.length ? '<button class="btn" type="button" id="ver-oracoes">' + (verOracoesAntigas ? "Esconder" : "Ver") + " orações anteriores (" + antigas.length + ")</button>" +
-        (verOracoesAntigas ? antigas.map(cartaoOracao).join("") : "") : "") + "</div>";
+    var tot = oracoes.length, comAudio = oracoes.filter(function (o) { return (gravPorOracao[o.arquivo] || []).length; }).length;
+    return '<div class="grupo-oracoes"><div class="rotulo-estante">Biblioteca de orações · ' + tot + (tot > 1 ? " orações" : " oração") + ' · ' + comAudio + ' com áudio neste aparelho</div>' +
+      '<input class="busca-oracoes" id="busca-oracoes" type="search" placeholder="Buscar por nome, data ou tema" aria-label="Buscar orações" value="' + escapar(buscaOr) + '">' +
+      '<div id="lista-oracoes" class="grupo-oracoes">' + listaOracoesHtml() + '</div></div>';
   }
+  function atualizarGravsEstante() { carregarGravsOracoes().then(function () { if (!$("tela-estante").hidden) renderEstante(); }); }
+  function atualizarListaOr() { var el = $("lista-oracoes"); if (el) el.innerHTML = listaOracoesHtml(); }
+  async function tocarGravacao(k, arq) {
+    var g = await idbGet("gravacoes", k); if (!g) return;
+    if (urlTocando) URL.revokeObjectURL(urlTocando);
+    urlTocando = URL.createObjectURL(g.blob);
+    var o = oracoes.find(function (x) { return x.arquivo === arq; }) || {};
+    tocando = { arq: arq, k: k, titulo: (o.titulo || "Oração") + (g.nome ? " · " + g.nome : "") };
+    $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr();
+    var a = $("tc-audio"); if (a) { try { await a.play(); } catch (e) {} }
+  }
+  $("tocador-or").addEventListener("click", function (ev) {
+    if (!ev.target.closest("#tc-fechar")) return;
+    var a = $("tc-audio"); if (a) a.pause(); if (urlTocando) URL.revokeObjectURL(urlTocando);
+    tocando = null; urlTocando = null; this.innerHTML = ""; document.body.classList.remove("com-tocador"); atualizarListaOr();
+  });
+  $("lista").addEventListener("input", function (ev) {
+    if (ev.target.id !== "busca-oracoes") return;
+    buscaOr = ev.target.value; atualizarListaOr();
+  });
+  $("lista").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-or-play],[data-or-tocar],[data-or-abrir]"); if (!b) return;
+    ev.stopPropagation();
+    if (b.dataset.orPlay) { var gs = gravPorOracao[b.dataset.orPlay] || []; if (gs.length) tocarGravacao(gs[0].k, b.dataset.orPlay); return; }
+    if (b.dataset.orTocar) { tocarGravacao(b.dataset.orTocar, b.dataset.arq); return; }
+    if ("orAbrir" in b.dataset) { abertaOr = b.dataset.orAbrir || null; atualizarListaOr(); }
+  }, true);
 
   function renderEstante() {
     var el = $("lista");
@@ -434,7 +532,6 @@ body.modo-aula .pag { display: none; }
   }
 
   $("lista").addEventListener("click", function (ev) {
-    if (ev.target.closest("#ver-oracoes")) { verOracoesAntigas = !verOracoesAntigas; renderEstante(); return; }
     var b = ev.target.closest(".livro");
     if (!b) return;
     if (b.dataset.oracao) { var o = oracoes.find(function (x) { return x.arquivo === b.dataset.oracao; }) || {}; abrirLivro({ id: "aula", aula: true, fonte: "oracoes/" + b.dataset.oracao, dados: { titulo: o.titulo || "Oração" } }); return; }
@@ -1419,7 +1516,7 @@ body.modo-aula .pag { display: none; }
     document.body.classList.remove("modo-biblia");
     document.body.classList.remove("modo-aula");
     carregarAula().then(function (a) { aulaAtual = a; renderEstante(); });
-    carregarOracoes().then(function (o) { oracoes = o; renderEstante(); });
+    carregarOracoes().then(async function (o) { oracoes = o; await carregarGravsOracoes(); renderEstante(); });
     definirIdiomaOriginal("pt");
   });
   var tam = parseInt(lerPref("leitor.tam", "18"), 10) || 18;
@@ -1573,12 +1670,13 @@ body.modo-aula .pag { display: none; }
       msgGrav("Gravação salva (" + fmtDur(dur) + "). Dê um nome a ela, se quiser.");
     } catch (e) { msgGrav("Não consegui salvar a gravação (" + (e && e.message || e) + ")."); }
     listarGravacoes();
+    atualizarGravsEstante();
   }
   $("painel-grav").addEventListener("submit", async function (ev) {
     var f = ev.target.closest("form[data-grav-form]"); if (!f) return;
     ev.preventDefault();
     var k = f.dataset.gravForm, g = await idbGet("gravacoes", k);
-    if (g) { g.nome = f.nome.value.trim(); await idbPut("gravacoes", k, g); msgGrav(g.nome ? "Nome salvo." : "Nome removido."); }
+    if (g) { g.nome = f.nome.value.trim(); await idbPut("gravacoes", k, g); msgGrav(g.nome ? "Nome salvo." : "Nome removido."); atualizarGravsEstante(); }
     grav.editando = null; listarGravacoes();
   });
   $("btn-grav").addEventListener("click", function () {
@@ -1606,7 +1704,7 @@ body.modo-aula .pag { display: none; }
         await navigator.share({ files: [f], title: g.titulo || "Gravação" });
       } catch (e) { if (!e || e.name !== "AbortError") msgGrav("Este aparelho não deixou enviar o arquivo. Use ⬇ para salvar."); }
     } else if (b.dataset.gravApagar) {
-      if (grav.apagar === k) { await idbDel("gravacoes", k); grav.apagar = null; msgGrav("Gravação apagada."); }
+      if (grav.apagar === k) { await idbDel("gravacoes", k); grav.apagar = null; msgGrav("Gravação apagada."); atualizarGravsEstante(); }
       else grav.apagar = k;
       listarGravacoes();
     }
@@ -1620,6 +1718,7 @@ body.modo-aula .pag { display: none; }
     renderEstante();
     aulaAtual = await carregarAula();
     oracoes = await carregarOracoes();
+    await carregarGravsOracoes();
     renderEstante();
   }
   iniciar();
