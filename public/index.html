@@ -108,6 +108,8 @@ body.modo-aula .pag { display: none; }
 .abas-estante { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
 .aba-est { flex: 1; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 600; font-size: 15px; padding: 10px 6px; color: var(--muted); cursor: pointer; }
 .aba-est.ativo { color: var(--accent); border-bottom-color: var(--accent); }
+.grav-marcas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.grav-marcas .btn.marcada { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .vol-linha { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
 .vol-nome { min-width: 76px; font-size: 16px; font-weight: 600; }
 .vol-btn { width: 48px; height: 48px; flex: none; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 26px; line-height: 1; cursor: pointer; color: inherit; }
@@ -528,16 +530,59 @@ body.com-tocador .estante { padding-bottom: 280px; }
       if (i >= passos) { clearInterval(mus.fade); if (depois) depois(); }
     }, 50);
   }
+  function idMusicaAtual() { return (mus.auto && mus.idAuto) || mus.id; }
   function musTocar(ms) {
-    if (!mus.id) return;
+    var id = idMusicaAtual(); if (!id) return;
     if (!mus.el) { mus.el = new Audio(); mus.el.loop = true; mus.el.preload = "auto"; mus.el.addEventListener("error", function () { setStatus("Não consegui tocar a música de fundo agora."); }); }
-    var url = "musica/" + mus.id;
+    var url = "musica/" + id;
     if (mus.el.getAttribute("src") !== url) { mus.el.src = url; mus.el.volume = 0; }
     if (mus.el.paused) mus.el.volume = 0;
     mus.tocando = true;
     var p = mus.el.play(); if (p && p.catch) p.catch(function () {});
     musFade(mus.vol, ms == null ? 3000 : ms);
     atualizarCtlMusica();
+  }
+  // Programação de trilhas: cada oração pode trazer {parte, musica} e a música troca quando a parte começa.
+  mus.auto = lerPref("leitor.musica.auto", "1") === "1"; mus.idAuto = ""; mus.trilhas = null;
+  function normParte(t) { return semAcento(String(t || "")).replace(/[^a-z0-9]+/g, " ").trim(); }
+  function mostrarMusicaNoSeletor(id) { document.querySelectorAll("[data-mus-sel]").forEach(function (s) { if (id && s.value !== id) s.value = id; }); }
+  function musTrocarPara(id) {
+    if (!id || !mus.auto) return;
+    if (mus.idAuto === id) return;
+    mus.idAuto = id; mostrarMusicaNoSeletor(id);
+    if (!mus.tocando || !mus.el) return;
+    musFade(0, 1500, function () { if (mus.tocando && mus.idAuto === id) { mus.el.pause(); musTocar(2000); } });
+  }
+  // Partes da oração que têm trilha: [{i (parágrafo), parte, musica}]
+  function partesComTrilha(paras, trilhas) {
+    if (!paras || !trilhas || !trilhas.length) return [];
+    var mapa = {}; trilhas.forEach(function (t) { if (t && t.parte && t.musica) mapa[normParte(t.parte)] = t; });
+    var l = [];
+    paras.forEach(function (txt, i) { var t = mapa[normParte(txt)]; if (t && String(txt).length < 60) l.push({ i: i, parte: t.parte, musica: t.musica }); });
+    return l;
+  }
+  function trilhaNoParagrafo(partes, idx) {
+    var m = partes.length ? partes[0].musica : "";
+    partes.forEach(function (p) { if (p.i <= idx) m = p.musica; });
+    return m;
+  }
+  // Tempo de início de cada parte numa gravação: marcas feitas ao gravar ou estimativa pelo tamanho do texto.
+  function tempos(partes, paras, dur, marcas) {
+    var tot = 0, acum = [];
+    paras.forEach(function (t) { acum.push(tot); tot += String(t).length; });
+    // Pontos conhecidos (início, fim e partes marcadas); as partes sem marca ficam proporcionais entre eles.
+    var ancoras = [{ c: 0, t: 0 }, { c: tot, t: dur }];
+    partes.forEach(function (p) { var m = marcas && marcas[p.parte]; if (m != null) ancoras.push({ c: acum[p.i], t: m }); });
+    ancoras.sort(function (x, y) { return x.c - y.c; });
+    return partes.map(function (p) {
+      var m = marcas && marcas[p.parte], c = acum[p.i];
+      if (m != null) return { t: m, musica: p.musica, parte: p.parte, marcado: true };
+      var a = ancoras[0], b = ancoras[ancoras.length - 1];
+      ancoras.forEach(function (x) { if (x.c <= c && x.c >= a.c) a = x; });
+      for (var j = ancoras.length - 1; j >= 0; j--) if (ancoras[j].c >= c && ancoras[j].c <= b.c) b = ancoras[j];
+      var t = b.c > a.c ? a.t + (c - a.c) / (b.c - a.c) * (b.t - a.t) : a.t;
+      return { t: t, musica: p.musica, parte: p.parte, marcado: false };
+    });
   }
   function musParar(ms) {
     mus.tocando = false; atualizarCtlMusica();
@@ -549,7 +594,8 @@ body.com-tocador .estante { padding-bottom: 280px; }
     return '<div class="musica-ctl">' +
       (comPlay ? '<button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button>"
                : '<button class="btn" type="button" data-mus-liga aria-pressed="' + (mus.ligada ? "true" : "false") + '">♪ Fundo musical ' + (mus.ligada ? "ligado" : "desligado") + "</button>") +
-      '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select></div>" +
+      '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select>" +
+      (mus.trilhas ? '<button class="btn" type="button" data-mus-auto aria-pressed="' + (mus.auto ? "true" : "false") + '">🎼 Trilhas da oração ' + (mus.auto ? "ligadas" : "desligadas") + "</button>" : "") + "</div>" +
       linhaVolume("♪ Música", "musica", 0, 1, 0.01, mus.vol, "data-mus-vol");
   }
   function volumeMusica(v) {
@@ -562,9 +608,16 @@ body.com-tocador .estante { padding-bottom: 280px; }
     document.querySelectorAll("[data-mus-play]").forEach(function (b) { b.textContent = mus.tocando ? "⏸ Parar música" : "▶ Tocar música"; });
     document.querySelectorAll("[data-mus-liga]").forEach(function (b) { b.setAttribute("aria-pressed", mus.ligada ? "true" : "false"); b.textContent = "♪ Fundo musical " + (mus.ligada ? "ligado" : "desligado"); });
     var bm = $("btn-musica"); if (bm) bm.classList.toggle("gravando", false);
+    document.querySelectorAll("[data-mus-auto]").forEach(function (b) { b.setAttribute("aria-pressed", mus.auto ? "true" : "false"); b.textContent = "🎼 Trilhas da oração " + (mus.auto ? "ligadas" : "desligadas"); });
   }
   document.addEventListener("click", function (ev) {
-    var b = ev.target.closest("[data-mus-liga],[data-mus-play]"); if (!b) return;
+    var b = ev.target.closest("[data-mus-liga],[data-mus-play],[data-mus-auto]"); if (!b) return;
+    if ("musAuto" in b.dataset) {
+      mus.auto = !mus.auto; gravarPref("leitor.musica.auto", mus.auto ? "1" : "0"); atualizarCtlMusica();
+      if (mus.auto) { var id = mus.idAuto; mus.idAuto = ""; if (typeof sincronizarTrilha === "function") sincronizarTrilha(); else if (id) musTrocarPara(id); }
+      else if (mus.tocando && mus.idAuto && mus.idAuto !== mus.id) { mus.idAuto = ""; mostrarMusicaNoSeletor(mus.id); musFade(0, 1200, function () { if (mus.tocando) { mus.el.pause(); musTocar(1500); } }); }
+      return;
+    }
     if ("musPlay" in b.dataset) { if (mus.tocando) musParar(1500); else musTocar(2000); return; }
     mus.ligada = !mus.ligada; gravarPref("leitor.musica.on", mus.ligada ? "1" : "0");
     var voz = $("tc-audio");
@@ -575,6 +628,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     var t = ev.target;
     if (t.matches && t.matches("[data-mus-sel]")) {
       mus.id = t.value; gravarPref("leitor.musica.id", mus.id);
+      if (mus.trilhas && mus.auto) { mus.auto = false; gravarPref("leitor.musica.auto", "0"); atualizarCtlMusica(); }
       document.querySelectorAll("[data-mus-sel]").forEach(function (s) { s.value = mus.id; });
       if (mus.tocando) { musFade(0, 600, function () { if (mus.el) mus.el.pause(); musTocar(1500); }); }
     }
@@ -744,12 +798,27 @@ body.com-tocador .estante { padding-bottom: 280px; }
     urlTocando = URL.createObjectURL(g.blob);
     var o = oracoes.find(function (x) { return x.arquivo === arq; }) || {};
     tocando = { arq: arq, k: k, titulo: (o.titulo || "Oração") + (g.nome ? " · " + g.nome : "") };
+    // Programação de trilhas desta oração
+    var plano = [];
+    try {
+      var d = await (await fetch("oracoes/" + arq)).json();
+      mus.trilhas = d.trilhas || null;
+      plano = tempos(partesComTrilha(d.paragrafos, d.trilhas), d.paragrafos || [], g.duracao || 0, g.marcas);
+    } catch (e) { mus.trilhas = null; }
+    mus.idAuto = ""; if (plano.length) musTrocarPara(plano[0].musica);
+    window.sincronizarTrilha = function () {
+      var a = $("tc-audio"); if (!a || !plano.length) return;
+      var m = plano[0].musica; plano.forEach(function (x) { if (x.t <= a.currentTime + 0.3) m = x.musica; });
+      musTrocarPara(m);
+    };
     $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr();
     var a = $("tc-audio"); if (!a) return;
     var inicio = true;
     a.addEventListener("play", function () { if (mus.ligada && !inicio) musTocar(1500); });
     a.addEventListener("pause", function () { if (!a.ended) musParar(800); });
     a.addEventListener("ended", function () { musParar(5000); });
+    a.addEventListener("timeupdate", function () { if (window.sincronizarTrilha) window.sincronizarTrilha(); });
+    a.addEventListener("seeked", function () { if (window.sincronizarTrilha) window.sincronizarTrilha(); });
     if (mus.ligada && mus.lista.length) { musTocar(3000); await new Promise(function (ok) { setTimeout(ok, 3000); }); }
     inicio = false;
     if (tocando && tocando.k === k) { try { await a.play(); } catch (e) {} }
@@ -757,7 +826,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
   $("tocador-or").addEventListener("click", function (ev) {
     if (!ev.target.closest("#tc-fechar")) return;
     var a = $("tc-audio"); if (a) a.pause(); if (urlTocando) URL.revokeObjectURL(urlTocando);
-    musParar(800);
+    musParar(800); window.sincronizarTrilha = null; mus.trilhas = null; mus.idAuto = "";
     tocando = null; urlTocando = null; this.innerHTML = ""; document.body.classList.remove("com-tocador"); atualizarListaOr();
   });
   $("lista").addEventListener("input", function (ev) {
@@ -897,7 +966,8 @@ body.com-tocador .estante { padding-bottom: 280px; }
         var au = l.fonte ? await carregarAula(l.fonte) : ((await carregarAula()) || aulaAtual);
         if (!au) throw new Error(l.fonte ? "a oração não está disponível agora" : "a aula não está disponível agora");
         if (!l.fonte) aulaAtual = au;
-        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo } };
+        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo }, paras: au.paragrafos, trilhas: au.trilhas || null };
+        if (!tocando) { mus.trilhas = atual.trilhas; mus.idAuto = ""; var pc = partesComTrilha(atual.paras, atual.trilhas); if (pc.length) musTrocarPara(pc[0].musica); }
         $("nome-livro").textContent = (l.fonte ? "🙏 " : "🎓 ") + (au.titulo || "Aula");
         pdf = { aula: true, paras: au.paragrafos, numPages: 1 };
         definirIdiomaOriginal("pt");
@@ -1344,7 +1414,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     var lang = idiomaDe(qual), voz = vozPara(lang);
     (function prox() {
       if (sessao !== audio.sessao) return;
-      if (audio.idx >= ps.length) { pararAudio(); return; }
+      if (audio.idx >= ps.length) { pararAudio(); if (atual && atual.trilhas && mus.tocando && !tocando) musParar(5000); return; }
       limparDestaque();
       var p = ps[audio.idx];
       p.classList.add("falando");
@@ -1353,6 +1423,10 @@ body.com-tocador .estante { padding-bottom: 280px; }
         if (outro) outro.classList.add("falando");
       });
       p.scrollIntoView({ block: "nearest" });
+      if (atual && atual.trilhas && !tocando) {
+        var pcs = partesComTrilha(atual.paras, atual.trilhas);
+        if (pcs.length) { musTrocarPara(trilhaNoParagrafo(pcs, audio.idx)); if (mus.ligada && !mus.tocando && audio.idx === idx) musTocar(2000); }
+      }
       var u = new SpeechSynthesisUtterance(textoFala(p));
       u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
       if (voz) u.voice = voz;
@@ -1853,7 +1927,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     pararGravacao();
     $("painel-grav").hidden = true; $("btn-grav").setAttribute("aria-pressed", "false");
     $("painel-musica").hidden = true; $("btn-musica").setAttribute("aria-pressed", "false");
-    if (!tocando) musParar(1000);
+    if (!tocando) { musParar(1000); mus.trilhas = null; mus.idAuto = ""; }
     salvarProgresso(true);
     $("tela-leitor").hidden = true;
     $("tela-estante").hidden = false;
@@ -1940,6 +2014,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
       '<button class="btn" type="button" id="grav-pausa" hidden>⏸ Pausar</button>' +
       '<span id="grav-tempo" class="grav-tempo">0:00</span><span class="dica" id="grav-msg"></span></div>' +
       '<div class="dica">Leia o texto em voz alta enquanto grava. A gravação fica guardada neste aparelho, ligada a este texto. Use ⬇ para salvar o arquivo ou ↗ para mandar para o Drive ou o WhatsApp.</div>' +
+      '<div id="grav-marcas" class="grav-marcas" hidden></div>' +
       '<div id="grav-lista" class="grav-lista"></div>';
     atualizarBtnGrav();
     listarGravacoes();
@@ -1951,6 +2026,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     b.classList.toggle("gravando", st === "recording");
     $("btn-grav").classList.toggle("gravando", on);
     var bp = $("grav-pausa");
+    pintarMarcas(on);
     if (bp) { bp.hidden = !on || !grav.rec.pause; bp.textContent = st === "paused" ? "▶ Continuar" : "⏸ Pausar"; bp.classList.toggle("primario", st === "paused"); }
   }
   async function listarGravacoes() {
@@ -2016,11 +2092,22 @@ body.com-tocador .estante { padding-bottom: 280px; }
     grav.rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) grav.partes.push(ev.data); };
     grav.rec.onstop = salvarGravacao;
     grav.rec.start(1000);
-    grav.inicio = Date.now(); grav.pausaTotal = 0; grav.pausaDesde = 0;
+    grav.inicio = Date.now(); grav.pausaTotal = 0; grav.pausaDesde = 0; grav.marcas = {};
     grav.timer = setInterval(function () { var t = $("grav-tempo"); if (t) t.textContent = fmtDur(tempoGravado()) + (grav.pausaDesde ? " ⏸" : ""); }, 500);
     try { if (navigator.wakeLock) grav.lock = await navigator.wakeLock.request("screen"); } catch (e) {}
     msgGrav("Gravando… leia no seu ritmo.");
     atualizarBtnGrav();
+  }
+  function pintarMarcas(on) {
+    var el = $("grav-marcas"); if (!el) return;
+    var pcs = atual && atual.trilhas ? partesComTrilha(atual.paras, atual.trilhas) : [];
+    el.hidden = !on || !pcs.length;
+    if (el.hidden) return;
+    grav.marcas = grav.marcas || {};
+    el.innerHTML = '<span class="dica">Toque na parte quando começar a lê-la (a música troca nesse ponto):</span>' + pcs.map(function (p) {
+      var m = grav.marcas[p.parte];
+      return '<button class="btn' + (m != null ? " marcada" : "") + '" type="button" data-marcar="' + escapar(p.parte) + '">' + (m != null ? "✓ " : "") + escapar(p.parte) + (m != null ? " · " + fmtDur(m) : "") + "</button>";
+    }).join("");
   }
   function tempoGravado() { return (Date.now() - grav.inicio - grav.pausaTotal - (grav.pausaDesde ? Date.now() - grav.pausaDesde : 0)) / 1000; }
   function alternarPausa() {
@@ -2048,7 +2135,8 @@ body.com-tocador .estante { padding-bottom: 280px; }
     try {
       var novaChave = "g" + Date.now().toString(36);
       grav.editando = novaChave;
-      await idbPut("gravacoes", novaChave, { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob, duracaoOk: true });
+      await idbPut("gravacoes", novaChave, { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob, duracaoOk: true, marcas: grav.marcas && Object.keys(grav.marcas).length ? grav.marcas : null });
+      grav.marcas = {};
       msgGrav("Gravação salva (" + fmtDur(dur) + "). Dê um nome a ela, se quiser.");
     } catch (e) { msgGrav("Não consegui salvar a gravação (" + (e && e.message || e) + ")."); }
     listarGravacoes();
@@ -2072,6 +2160,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     var b = ev.target.closest("button"); if (!b) return;
     if (b.id === "grav-btn") { if (grav.rec && grav.rec.state !== "inactive") pararGravacao(); else iniciarGravacao(); return; }
     if (b.id === "grav-pausa") { alternarPausa(); return; }
+    if (b.dataset.marcar) { grav.marcas = grav.marcas || {}; grav.marcas[b.dataset.marcar] = Math.round(tempoGravado() * 10) / 10; pintarMarcas(true); return; }
     if (b.dataset.gravRenomear) { grav.editando = b.dataset.gravRenomear; listarGravacoes(); return; }
     if (b.dataset.gravCancelar) { grav.editando = null; listarGravacoes(); return; }
     var k = b.dataset.gravBaixar || b.dataset.gravEnviar || b.dataset.gravApagar; if (!k) return;
