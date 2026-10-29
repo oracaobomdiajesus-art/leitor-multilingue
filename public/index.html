@@ -103,6 +103,12 @@ body.modo-aula .pag { display: none; }
 .livro.aula .lombada { background: var(--accent); }
 .livro.oracao .lombada { background: var(--ok); }
 .grupo-oracoes { display: flex; flex-direction: column; gap: 8px; }
+.abas-estante { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.aba-est { flex: 1; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 600; font-size: 15px; padding: 10px 6px; color: var(--muted); cursor: pointer; }
+.aba-est.ativo { color: var(--accent); border-bottom-color: var(--accent); }
+.ganho { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ganho input { flex: 1; max-width: 220px; }
+.ganho output { min-width: 42px; font-variant-numeric: tabular-nums; }
 .busca-oracoes { height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--paper); font: inherit; width: 100%; box-sizing: border-box; }
 .or-item { display: flex; gap: 8px; align-items: stretch; }
 .or-item .livro { flex: 1; min-width: 0; }
@@ -208,6 +214,10 @@ body.com-tocador .estante { padding-bottom: 280px; }
       <label class="btn primario seletor" id="btn-add" for="arquivo">Adicionar arquivo
         <input type="file" id="arquivo" accept="application/pdf,.pdf,.csv,text/csv,.json,application/json"></label>
       <span class="sub" id="upload-msg"></span>
+    </div>
+    <div class="abas-estante" role="tablist" aria-label="Categorias">
+      <button class="aba-est" type="button" role="tab" data-cat="oracoes">🙏 Orações</button>
+      <button class="aba-est" type="button" role="tab" data-cat="livros">📚 Livros</button>
     </div>
     <div id="lista" class="livros">
       <div class="vazio">Carregando sua estante…</div>
@@ -446,6 +456,32 @@ body.com-tocador .estante { padding-bottom: 280px; }
       '<span class="info"><span class="titulo">🙏 ' + escapar(o.titulo || "Oração") + '</span>' +
       '<span class="meta">' + (o.data ? dataCurta(o.data + "T12:00:00") : "") + (o.resumo ? " · " + escapar(o.resumo) : "") + '</span></span></button>';
   }
+  // ---------- Volume da voz nas gravações (até 300%) ----------
+  var ganho = { ctx: null, nos: new WeakMap(), v: parseFloat(lerPref("leitor.voz.ganho", "1")) || 1 };
+  function prepararGanho(el) {
+    if (!el || ganho.nos.has(el)) return;
+    try {
+      var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      ganho.ctx = ganho.ctx || new C();
+      var src = ganho.ctx.createMediaElementSource(el), g = ganho.ctx.createGain();
+      g.gain.value = ganho.v; src.connect(g); g.connect(ganho.ctx.destination);
+      ganho.nos.set(el, g);
+    } catch (e) {}
+  }
+  function aplicarGanho(v) {
+    ganho.v = v; gravarPref("leitor.voz.ganho", String(v));
+    document.querySelectorAll("audio[data-voz]").forEach(function (a) { var g = ganho.nos.get(a); if (g) g.gain.value = v; });
+    document.querySelectorAll("[data-ganho]").forEach(function (i) { if (+i.value !== v) i.value = v; var o = i.parentNode.querySelector("output"); if (o) o.textContent = Math.round(v * 100) + "%"; });
+  }
+  function controleGanho() {
+    return '<label class="ganho">🔊 Volume da voz <input type="range" data-ganho min="0" max="3" step="0.05" value="' + ganho.v + '" aria-label="Volume da voz"><output>' + Math.round(ganho.v * 100) + "%</output></label>";
+  }
+  document.addEventListener("play", function (ev) {
+    var a = ev.target; if (!a || !a.matches || !a.matches("audio[data-voz]")) return;
+    prepararGanho(a); if (ganho.ctx && ganho.ctx.state === "suspended") ganho.ctx.resume();
+  }, true);
+  document.addEventListener("input", function (ev) { if (ev.target.matches && ev.target.matches("[data-ganho]")) aplicarGanho(parseFloat(ev.target.value) || 0); });
+
   // ---------- Fundo musical (músicas do Drive, via /musica/<id>) ----------
   var mus = { lista: [], padrao: "", el: null, fade: null, tocando: false,
     ligada: lerPref("leitor.musica.on", "1") === "1", id: lerPref("leitor.musica.id", ""), vol: parseFloat(lerPref("leitor.musica.vol", "0.15")) || 0.15 };
@@ -484,7 +520,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
       (comPlay ? '<button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button>"
                : '<button class="btn" type="button" data-mus-liga aria-pressed="' + (mus.ligada ? "true" : "false") + '">♪ Fundo musical ' + (mus.ligada ? "ligado" : "desligado") + "</button>") +
       '<select class="sel" data-mus-sel aria-label="Música de fundo">' + ops + "</select>" +
-      '<label>volume <input type="range" data-mus-vol min="0" max="0.6" step="0.01" value="' + mus.vol + '" aria-label="Volume da música"></label></div>';
+      '<label>♪ Volume da música <input type="range" data-mus-vol min="0" max="0.6" step="0.01" value="' + mus.vol + '" aria-label="Volume da música"></label></div>';
   }
   function atualizarCtlMusica() {
     document.querySelectorAll("[data-mus-play]").forEach(function (b) { b.textContent = mus.tocando ? "⏸ Parar música" : "▶ Tocar música"; });
@@ -640,7 +676,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
   function tocadorHtml() {
     if (!tocando) return "";
     return '<div class="tocador" id="tocador"><div class="tc-cab"><b>🎧 ' + escapar(tocando.titulo) + '</b><button class="ico" type="button" id="tc-fechar" aria-label="Fechar o tocador">✕</button></div>' +
-      '<audio id="tc-audio" controls src="' + urlTocando + '"></audio>' + controlesMusica(false) + "</div>";
+      '<audio id="tc-audio" data-voz controls src="' + urlTocando + '"></audio>' + controleGanho() + controlesMusica(false) + "</div>";
   }
   function blocoOracoes() {
     if (!oracoes.length && !Object.keys(rasc).length) return "";
@@ -737,17 +773,28 @@ body.com-tocador .estante { padding-bottom: 280px; }
     }
   }, true);
 
+  var categoria = lerPref("leitor.categoria", "oracoes") === "livros" ? "livros" : "oracoes";
+  document.querySelector(".abas-estante").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-cat]"); if (!b) return;
+    categoria = b.dataset.cat; gravarPref("leitor.categoria", categoria); renderEstante();
+  });
   function renderEstante() {
     var el = $("lista");
     if (!idb) {
       el.innerHTML = '<div class="vazio aviso erro">Este navegador não deixou guardar arquivos (modo anônimo?). Abra numa janela normal do Chrome.</div>';
       return;
     }
-    if (!livros.length) {
-      el.innerHTML = blocoOracoes() + cartaoAula() + '<div class="vazio"><b>Nenhum livro neste aparelho ainda.</b><br>Toque em <b>Adicionar arquivo</b> e escolha no aparelho ou no Google Drive: um <b>PDF</b> (livro) ou a <b>Bíblia em CSV/JSON</b> (colunas livro, capítulo, versículo, texto). O arquivo fica guardado só neste aparelho.</div>';
+    document.querySelectorAll(".aba-est").forEach(function (b) { var on = b.dataset.cat === categoria; b.classList.toggle("ativo", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+    var acoes = document.querySelector(".acoes-estante"); if (acoes) acoes.style.display = categoria === "livros" ? "" : "none";
+    if (categoria === "oracoes") {
+      el.innerHTML = blocoOracoes() || '<div class="vazio">Nenhuma oração publicada ainda.</div>';
       return;
     }
-    el.innerHTML = blocoOracoes() + cartaoAula() + livros.map(function (l) {
+    if (!livros.length) {
+      el.innerHTML = '<div class="vazio"><b>Nenhum livro neste aparelho ainda.</b><br>Toque em <b>Adicionar arquivo</b> e escolha no aparelho ou no Google Drive: um <b>PDF</b> (livro) ou a <b>Bíblia em CSV/JSON</b> (colunas livro, capítulo, versículo, texto). O arquivo fica guardado só neste aparelho.</div>';
+      return;
+    }
+    el.innerHTML = livros.map(function (l) {
       var d = l.dados, tot = d.totalPaginas || 0, pg = d.paginaAtual || 1;
       var pct = tot ? Math.round((pg / tot) * 100) : 0;
       return '<button class="livro" type="button" data-id="' + escapar(l.id) + '">' +
@@ -1831,6 +1878,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
   function montarPainelGrav() {
     $("painel-grav").innerHTML =
       '<div class="linha"><b>Minha voz</b><button class="btn primario" type="button" id="grav-btn">● Gravar</button>' +
+      '<button class="btn" type="button" id="grav-pausa" hidden>⏸ Pausar</button>' +
       '<span id="grav-tempo" class="grav-tempo">0:00</span><span class="dica" id="grav-msg"></span></div>' +
       '<div class="dica">Leia o texto em voz alta enquanto grava. A gravação fica guardada neste aparelho, ligada a este texto. Use ⬇ para salvar o arquivo ou ↗ para mandar para o Drive ou o WhatsApp.</div>' +
       '<div id="grav-lista" class="grav-lista"></div>';
@@ -1839,10 +1887,12 @@ body.com-tocador .estante { padding-bottom: 280px; }
   }
   function atualizarBtnGrav() {
     var b = $("grav-btn"); if (!b) return;
-    var on = grav.rec && grav.rec.state === "recording";
+    var st = grav.rec ? grav.rec.state : "inactive", on = st === "recording" || st === "paused";
     b.textContent = on ? "■ Parar e salvar" : "● Gravar";
-    b.classList.toggle("gravando", !!on);
-    $("btn-grav").classList.toggle("gravando", !!on);
+    b.classList.toggle("gravando", st === "recording");
+    $("btn-grav").classList.toggle("gravando", on);
+    var bp = $("grav-pausa");
+    if (bp) { bp.hidden = !on || !grav.rec.pause; bp.textContent = st === "paused" ? "▶ Continuar" : "⏸ Pausar"; bp.classList.toggle("primario", st === "paused"); }
   }
   async function listarGravacoes() {
     var el = $("grav-lista"); if (!el) return;
@@ -1862,8 +1912,8 @@ body.com-tocador .estante { padding-bottom: 280px; }
         '<span class="grav-acoes"><button class="ico" type="button" data-grav-baixar="' + x.k + '" title="Salvar arquivo" aria-label="Salvar arquivo">⬇</button>' +
         (navigator.share ? '<button class="ico" type="button" data-grav-enviar="' + x.k + '" title="Enviar" aria-label="Enviar para outro app">↗</button>' : "") +
         '<button class="ico" type="button" data-grav-apagar="' + x.k + '" title="Apagar" aria-label="Apagar gravação">' + (grav.apagar === x.k ? "Apagar?" : "🗑") + '</button></span></div>' +
-        '<audio controls preload="metadata" src="' + url + '"></audio></div>';
-    }).join("");
+        '<audio data-voz controls preload="metadata" src="' + url + '"></audio></div>';
+    }).join("") + controleGanho();
     var inp = el.querySelector(".grav-nome input"); if (inp) inp.focus();
   }
   async function iniciarGravacao() {
@@ -1883,16 +1933,26 @@ body.com-tocador .estante { padding-bottom: 280px; }
     grav.rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) grav.partes.push(ev.data); };
     grav.rec.onstop = salvarGravacao;
     grav.rec.start(1000);
-    grav.inicio = Date.now();
-    grav.timer = setInterval(function () { var t = $("grav-tempo"); if (t) t.textContent = fmtDur((Date.now() - grav.inicio) / 1000); }, 500);
+    grav.inicio = Date.now(); grav.pausaTotal = 0; grav.pausaDesde = 0;
+    grav.timer = setInterval(function () { var t = $("grav-tempo"); if (t) t.textContent = fmtDur(tempoGravado()) + (grav.pausaDesde ? " ⏸" : ""); }, 500);
     try { if (navigator.wakeLock) grav.lock = await navigator.wakeLock.request("screen"); } catch (e) {}
     msgGrav("Gravando… leia no seu ritmo.");
     atualizarBtnGrav();
   }
-  function pararGravacao() { if (grav.rec && grav.rec.state !== "inactive") grav.rec.stop(); }
+  function tempoGravado() { return (Date.now() - grav.inicio - grav.pausaTotal - (grav.pausaDesde ? Date.now() - grav.pausaDesde : 0)) / 1000; }
+  function alternarPausa() {
+    if (!grav.rec) return;
+    if (grav.rec.state === "recording") { grav.rec.pause(); grav.pausaDesde = Date.now(); msgGrav("Pausado. Toque em ▶ Continuar para seguir de onde parou."); }
+    else if (grav.rec.state === "paused") { grav.rec.resume(); grav.pausaTotal += Date.now() - grav.pausaDesde; grav.pausaDesde = 0; msgGrav("Gravando… leia no seu ritmo."); }
+    atualizarBtnGrav();
+  }
+  function pararGravacao() {
+    if (grav.rec && grav.rec.state === "paused") { grav.pausaTotal += Date.now() - grav.pausaDesde; grav.pausaDesde = 0; }
+    if (grav.rec && grav.rec.state !== "inactive") grav.rec.stop();
+  }
   async function salvarGravacao() {
     clearInterval(grav.timer);
-    var dur = (Date.now() - grav.inicio) / 1000;
+    var dur = tempoGravado(); grav.pausaDesde = 0;
     if (grav.stream) grav.stream.getTracks().forEach(function (t) { t.stop(); });
     try { if (grav.lock) await grav.lock.release(); } catch (e) {}
     grav.lock = null;
@@ -1926,7 +1986,8 @@ body.com-tocador .estante { padding-bottom: 280px; }
   });
   $("painel-grav").addEventListener("click", async function (ev) {
     var b = ev.target.closest("button"); if (!b) return;
-    if (b.id === "grav-btn") { if (grav.rec && grav.rec.state === "recording") pararGravacao(); else iniciarGravacao(); return; }
+    if (b.id === "grav-btn") { if (grav.rec && grav.rec.state !== "inactive") pararGravacao(); else iniciarGravacao(); return; }
+    if (b.id === "grav-pausa") { alternarPausa(); return; }
     if (b.dataset.gravRenomear) { grav.editando = b.dataset.gravRenomear; listarGravacoes(); return; }
     if (b.dataset.gravCancelar) { grav.editando = null; listarGravacoes(); return; }
     var k = b.dataset.gravBaixar || b.dataset.gravEnviar || b.dataset.gravApagar; if (!k) return;
