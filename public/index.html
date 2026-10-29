@@ -374,6 +374,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="vendor/fix-webm-duration.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1946,6 +1947,30 @@ body.com-tocador .estante { padding-bottom: 280px; }
     }).join("") + controleGanho();
     var inp = el.querySelector(".grav-nome input"); if (inp) inp.focus();
   }
+  // O Chrome grava WEBM sem a duração no cabeçalho, e aí a barra de progresso fica perdida.
+  async function corrigirDuracao(blob, seg) {
+    if (!blob || !/webm/.test(blob.type) || !window.ysFixWebmDuration || !(seg > 0)) return blob;
+    try { return await window.ysFixWebmDuration(blob, seg * 1000, { logger: false }); } catch (e) { return blob; }
+  }
+  async function migrarGravacoes() {
+    if (!idb || !idb.objectStoreNames.contains("gravacoes")) return;
+    var todas = await new Promise(function (ok) {
+      var l = [], r = idb.transaction("gravacoes", "readonly").objectStore("gravacoes").openCursor();
+      r.onsuccess = function () { var c = r.result; if (!c) { ok(l); return; } if (c.value && !c.value.duracaoOk) l.push({ k: c.key, v: c.value }); c.continue(); };
+      r.onerror = function () { ok(l); };
+    });
+    for (var i = 0; i < todas.length; i++) {
+      var g = todas[i].v;
+      try { g.blob = await corrigirDuracao(g.blob, g.duracao); g.duracaoOk = true; await idbPut("gravacoes", todas[i].k, g); } catch (e) {}
+    }
+  }
+  // Rede de segurança: se ainda vier sem duração, força o navegador a descobrir.
+  document.addEventListener("loadedmetadata", function (ev) {
+    var a = ev.target; if (!a || a.tagName !== "AUDIO" || isFinite(a.duration)) return;
+    var volta = function () { a.removeEventListener("durationchange", volta); if (isFinite(a.duration)) a.currentTime = 0; };
+    a.addEventListener("durationchange", volta);
+    try { a.currentTime = 1e101; } catch (e) {}
+  }, true);
   async function iniciarGravacao() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { msgGrav("Este navegador não grava áudio. Use o Chrome."); return; }
     if (!idb || !idb.objectStoreNames.contains("gravacoes")) { msgGrav("Não consigo guardar gravações neste navegador (modo anônimo?)."); return; }
@@ -1988,13 +2013,14 @@ body.com-tocador .estante { padding-bottom: 280px; }
     grav.lock = null;
     var mime = (grav.rec && grav.rec.mimeType) || tipoAudio() || "audio/webm";
     var blob = new Blob(grav.partes, { type: mime.split(";")[0] });
+    blob = await corrigirDuracao(blob, dur);
     grav.rec = null; grav.stream = null; grav.partes = [];
     atualizarBtnGrav();
     if (!blob.size) { msgGrav("A gravação ficou vazia. Tente de novo."); return; }
     try {
       var novaChave = "g" + Date.now().toString(36);
       grav.editando = novaChave;
-      await idbPut("gravacoes", novaChave, { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob });
+      await idbPut("gravacoes", novaChave, { livro: grav.chave || chaveGrav(), titulo: grav.titulo || "", criadoEm: hoje(), duracao: dur, mime: blob.type, blob: blob, duracaoOk: true });
       msgGrav("Gravação salva (" + fmtDur(dur) + "). Dê um nome a ela, se quiser.");
     } catch (e) { msgGrav("Não consegui salvar a gravação (" + (e && e.message || e) + ")."); }
     listarGravacoes();
@@ -2045,6 +2071,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     try { idb = await abrirIdb(); } catch (e) { idb = null; }
     try { livros = JSON.parse(lerPref("leitor.livros", "[]")) || []; } catch (e) { livros = []; }
     renderEstante();
+    await migrarGravacoes();
     aulaAtual = await carregarAula();
     oracoes = await carregarOracoes();
     await carregarGravsOracoes();
