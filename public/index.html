@@ -95,6 +95,8 @@ select.sel { height: 36px; border: 1px solid var(--line); border-radius: 8px; ba
 .texto p.inicio { border-left-color: var(--accent); }
 .texto .nada { font-family: var(--font-ui); color: var(--muted); font-size: 14px; }
 .janelas.tres { grid-template-columns: 1fr 1fr 1fr; }
+.janelas.uma, .janelas.uma.tres { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; }
+#col1[data-modo="orig"], #col1[data-modo="trad"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .jcab .grupo { gap: 4px; }
 .texto sup.vn { font-family: var(--font-ui); font-size: .62em; font-weight: 700; color: var(--accent); margin-right: 4px; vertical-align: super; }
 .bib select.sel { max-width: 150px; }
@@ -268,6 +270,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
         </select>
       </div>
       <div class="grupo">
+        <button class="ico" id="col1" type="button" title="Idiomas na tela" aria-label="Escolher quantos idiomas aparecem na tela">⇆</button>
         <button class="ico" id="col3" type="button" aria-pressed="false" title="3ª coluna" aria-label="3ª coluna">Ⅲ</button>
         <button class="ico" id="sync" type="button" aria-pressed="true" title="Rolagem junta" aria-label="Rolagem junta">⇅</button>
         <button class="ico" id="menor" type="button" aria-label="Diminuir letra">A−</button>
@@ -287,6 +290,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
         <span><b>‹ ›</b> página (ou capítulo) anterior / próxima</span>
         <span><b>Livro · Cap.</b> escolher livro e capítulo (Bíblia)</span>
         <span><b>Idioma</b> tradutor embutido (só no computador)</span>
+        <span><b>⇆</b> dois idiomas, só o original ou só a tradução</span>
         <span><b>Ⅲ</b> mostrar/esconder a 3ª coluna</span>
         <span><b>⇅</b> rolagem junta (liga/desliga)</span>
         <span><b>A− A+</b> tamanho da letra</span>
@@ -1493,6 +1497,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
   $("trad").addEventListener("scroll", aoRolar, { passive: true });
   $("fixo").addEventListener("scroll", aoRolar, { passive: true });
   function janelasVisiveis() {
+    if (modoCol === "orig" || modoCol === "trad") return [$(modoCol)];
     return JANELAS.filter(function (q) { return q !== "fixo" || col3Ligada; }).map($);
   }
   $("sync").addEventListener("click", function () {
@@ -1531,8 +1536,30 @@ body.com-tocador .estante { padding-bottom: 280px; }
   }
   window.addEventListener("resize", agendarAlinhar);
 
+  // Idiomas na tela: os dois, só o original ou só a tradução.
+  var modoCol = lerPref("leitor.modoCol", "ambos");
+  var NOMES_MODO = { ambos: "Dois idiomas na tela", orig: "Só o original", trad: "Só a tradução" };
+  function aplicarModoCol() {
+    var uma = modoCol === "orig" || modoCol === "trad";
+    $("orig").parentNode.hidden = modoCol === "trad";
+    $("trad").parentNode.hidden = modoCol === "orig";
+    $("janela-fixo").hidden = uma || !col3Ligada;
+    document.querySelector(".janelas").classList.toggle("uma", uma);
+    $("col1").dataset.modo = modoCol;
+    $("col1").textContent = modoCol === "orig" ? "①" : modoCol === "trad" ? "②" : "⇆";
+    $("col1").title = NOMES_MODO[modoCol] + " (toque para trocar)";
+    $("col3").disabled = uma;
+    agendarAlinhar();
+  }
+  $("col1").addEventListener("click", function () {
+    modoCol = modoCol === "ambos" ? "orig" : modoCol === "orig" ? "trad" : "ambos";
+    gravarPref("leitor.modoCol", modoCol);
+    if (audio.qual && janelasVisiveis().map(function (e) { return e.id; }).indexOf(audio.qual) < 0) pararAudio();
+    aplicarModoCol();
+    setStatus(NOMES_MODO[modoCol] + ".");
+  });
   function aplicarCol3() {
-    $("janela-fixo").hidden = !col3Ligada;
+    $("janela-fixo").hidden = !col3Ligada || modoCol === "orig" || modoCol === "trad";
     document.querySelector(".janelas").classList.toggle("tres", col3Ligada);
     $("col3").setAttribute("aria-pressed", col3Ligada ? "true" : "false");
     $("col3").title = col3Ligada ? "Esconder a 3ª coluna" : "Mostrar a 3ª coluna";
@@ -1620,6 +1647,7 @@ body.com-tocador .estante { padding-bottom: 280px; }
     } catch (e) {}
   });
   aplicarCol3();
+  aplicarModoCol();
 
   // ---------- Biblia (CSV/JSON) ----------
   function textoFala(p) {
