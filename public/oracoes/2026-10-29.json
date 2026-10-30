@@ -75,5 +75,197 @@
    "musica": "1pCi3kcf0Bggtl--88RANoRXYVTw8mJ8s",
    "titulo": "gentle-instrumental-1-322812"
   }
+ ],
+ "subetapas": [
+  {
+   "i": 2,
+   "nome": "Lavar o pecado",
+   "refs": [
+    "Salmos 51.2"
+   ]
+  },
+  {
+   "i": 3,
+   "nome": "Julgar sem medida",
+   "refs": [
+    "Provérbios 21.3"
+   ]
+  },
+  {
+   "i": 4,
+   "nome": "Vingança",
+   "refs": [
+    "Provérbios 20.22"
+   ]
+  },
+  {
+   "i": 5,
+   "nome": "Fofoca e inveja",
+   "refs": [
+    "Salmos 139.23-24"
+   ]
+  },
+  {
+   "i": 7,
+   "nome": "Deus tardio em irar-se",
+   "refs": [
+    "Salmos 103.8"
+   ]
+  },
+  {
+   "i": 8,
+   "nome": "Lua, primavera e lar",
+   "refs": []
+  },
+  {
+   "i": 9,
+   "nome": "Segredo da aliança",
+   "refs": [
+    "Salmos 25.14"
+   ]
+  },
+  {
+   "i": 11,
+   "nome": "Prudência",
+   "refs": [
+    "Provérbios 19.11"
+   ]
+  },
+  {
+   "i": 12,
+   "nome": "Ouvir antes de falar",
+   "refs": [
+    "Tiago 1.19-20"
+   ]
+  },
+  {
+   "i": 13,
+   "nome": "Responder antes de ouvir",
+   "refs": [
+    "Provérbios 18.13"
+   ]
+  },
+  {
+   "i": 14,
+   "nome": "Guardar a boca",
+   "refs": [
+    "Provérbios 21.23"
+   ]
+  },
+  {
+   "i": 15,
+   "nome": "Mexerico",
+   "refs": [
+    "Provérbios 20.19"
+   ]
+  },
+  {
+   "i": 16,
+   "nome": "Guarda nos lábios",
+   "refs": [
+    "Salmos 141.3"
+   ]
+  },
+  {
+   "i": 18,
+   "nome": "Samuel",
+   "refs": [
+    "Tiago 3.17",
+    "Salmos 51.10"
+   ]
+  },
+  {
+   "i": 19,
+   "nome": "Mãe Izaura",
+   "refs": [
+    "Jeremias 17.14"
+   ]
+  },
+  {
+   "i": 20,
+   "nome": "Luis",
+   "refs": [
+    "Isaías 53.4"
+   ]
+  },
+  {
+   "i": 21,
+   "nome": "Nossa casa",
+   "refs": []
+  },
+  {
+   "i": 22,
+   "nome": "Autoridades",
+   "refs": [
+    "1 Timóteo 2.1-2"
+   ]
+  },
+  {
+   "i": 24,
+   "nome": "Ira",
+   "refs": [
+    "Provérbios 18.10"
+   ]
+  },
+  {
+   "i": 25,
+   "nome": "Inveja",
+   "refs": [
+    "Tiago 3.16",
+    "Jeremias 17.9-10"
+   ]
+  },
+  {
+   "i": 26,
+   "nome": "Carreira e Curitiba",
+   "refs": [
+    "Provérbios 21.5"
+   ]
+  },
+  {
+   "i": 27,
+   "nome": "Olhos",
+   "refs": [
+    "Provérbios 20.12"
+   ]
+  },
+  {
+   "i": 28,
+   "nome": "Anemia",
+   "refs": [
+    "Isaías 53.5"
+   ]
+  },
+  {
+   "i": 30,
+   "nome": "Árvore junto às águas",
+   "refs": [
+    "Jeremias 17.7-8"
+   ]
+  },
+  {
+   "i": 31,
+   "nome": "Paz que guarda",
+   "refs": [
+    "Filipenses 4.7"
+   ]
+  },
+  {
+   "i": 32,
+   "nome": "Família",
+   "refs": []
+  },
+  {
+   "i": 34,
+   "nome": "Gratidão",
+   "refs": []
+  },
+  {
+   "i": 35,
+   "nome": "Semear em paz",
+   "refs": [
+    "Tiago 3.18"
+   ]
+  }
  ]
 }

@@ -110,6 +110,10 @@ body.modo-aula .pag { display: none; }
 .aba-est.ativo { color: var(--accent); border-bottom-color: var(--accent); }
 .tc-etapa { display: flex; align-items: baseline; gap: 10px; padding: 2px 2px 0; }
 .tc-etapa-nome { font-family: var(--font-display, serif); font-size: 22px; font-weight: 700; color: var(--accent); }
+.tc-sub { font-size: 16px; min-height: 22px; }
+.tc-subs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tc-subs:empty { display: none; }
+.texto p[data-sub]::before { content: attr(data-sub); display: block; font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
 .tc-pulos { display: flex; gap: 8px; justify-content: center; }
 .tc-pulos .btn { min-height: 48px; min-width: 88px; font-size: 17px; }
 .tc-etapas { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -582,6 +586,20 @@ body.com-tocador .estante { padding-bottom: 460px; }
     return m;
   }
   // Tempo de início de cada parte numa gravação: marcas feitas ao gravar ou estimativa pelo tamanho do texto.
+  // Início estimado de cada parágrafo numa gravação, ancorado nas marcas de etapa.
+  function temposParagrafos(paras, dur, marcas, etapas) {
+    var tot = 0, acum = [];
+    paras.forEach(function (t) { acum.push(tot); tot += String(t).length; });
+    var ancoras = [{ c: 0, t: 0 }, { c: tot, t: dur }];
+    (etapas || []).forEach(function (p) { var m = marcas && marcas[p.parte]; if (m != null) ancoras.push({ c: acum[p.i], t: m }); });
+    ancoras.sort(function (x, y) { return x.c - y.c; });
+    return acum.map(function (c) {
+      var a = ancoras[0], b = ancoras[ancoras.length - 1];
+      ancoras.forEach(function (x) { if (x.c <= c && x.c >= a.c) a = x; });
+      for (var j = ancoras.length - 1; j >= 0; j--) if (ancoras[j].c >= c && ancoras[j].c <= b.c) b = ancoras[j];
+      return b.c > a.c ? a.t + (c - a.c) / (b.c - a.c) * (b.t - a.t) : a.t;
+    });
+  }
   function tempos(partes, paras, dur, marcas) {
     var tot = 0, acum = [];
     paras.forEach(function (t) { acum.push(tot); tot += String(t).length; });
@@ -591,12 +609,12 @@ body.com-tocador .estante { padding-bottom: 460px; }
     ancoras.sort(function (x, y) { return x.c - y.c; });
     return partes.map(function (p) {
       var m = marcas && marcas[p.parte], c = acum[p.i];
-      if (m != null) return { t: m, musica: p.musica, parte: p.parte, marcado: true };
+      if (m != null) return { i: p.i, t: m, musica: p.musica, parte: p.parte, marcado: true };
       var a = ancoras[0], b = ancoras[ancoras.length - 1];
       ancoras.forEach(function (x) { if (x.c <= c && x.c >= a.c) a = x; });
       for (var j = ancoras.length - 1; j >= 0; j--) if (ancoras[j].c >= c && ancoras[j].c <= b.c) b = ancoras[j];
       var t = b.c > a.c ? a.t + (c - a.c) / (b.c - a.c) * (b.t - a.t) : a.t;
-      return { t: t, musica: p.musica, parte: p.parte, marcado: false };
+      return { i: p.i, t: t, musica: p.musica, parte: p.parte, marcado: false };
     });
   }
   function musParar(ms) {
@@ -683,7 +701,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     if (carregandoTextos) return; carregandoTextos = true;
     await Promise.all(oracoes.map(async function (o) {
       if (textosOr[o.arquivo] != null) return;
-      try { var r = await fetch("oracoes/" + o.arquivo); var d = await r.json(); textosOr[o.arquivo] = semAcento((d.paragrafos || []).join(" ")); } catch (e) { textosOr[o.arquivo] = ""; }
+      try { var r = await fetch("oracoes/" + o.arquivo); var d = await r.json(); textosOr[o.arquivo] = semAcento((d.paragrafos || []).concat((d.subetapas || []).map(function (x) { return x.nome; })).join(" ")); } catch (e) { textosOr[o.arquivo] = ""; }
     }));
     carregandoTextos = false;
     if (buscaOr.trim()) atualizarListaOr();
@@ -777,12 +795,28 @@ body.com-tocador .estante { padding-bottom: 460px; }
         return '<button class="chip-tag' + (semAcento(x.t) === semAcento(filtroTag) ? " ativo" : "") + '" type="button" data-or-tag="' + escapar(x.t) + '">#' + escapar(x.t) + " <small>" + x.n + "</small></button>";
       }).join("") + (tags.length > 12 ? '<button class="link-det" type="button" data-or-temas>' + (verTodosTemas ? "menos temas" : "+" + (tags.length - 12) + " temas") + "</button>" : "") + "</div>" : "");
   }
-  function mostrarEtapa(n) {
+  function mostrarEtapa(n, k) {
     var et = tocando && tocando.etapas; if (!et || !et.length) return;
     var el = $("tc-etapa"); if (el && el.dataset.n !== String(n)) {
       el.dataset.n = n;
       el.innerHTML = '<span class="tc-etapa-nome">' + escapar(et[n].parte) + '</span><span class="dica">etapa ' + (n + 1) + " de " + et.length + "</span>";
       document.querySelectorAll("[data-tc-ir]").forEach(function (b) { b.classList.toggle("ativo", +b.dataset.tcIr === n); });
+      var subsEl = $("tc-subs");
+      if (subsEl) {
+        var da = (tocando.subs || []).map(function (x, j) { return { x: x, j: j }; }).filter(function (o) { return o.x.etapa === n; });
+        subsEl.innerHTML = da.length > 1 ? da.map(function (o) { return '<button class="chip-tag" type="button" data-tc-sub="' + o.j + '">' + escapar(o.x.nome) + "</button>"; }).join("") : "";
+      }
+      var sb0 = $("tc-sub"); if (sb0) sb0.dataset.k = "";
+    }
+    var sub = $("tc-sub"), ss = tocando.subs || [];
+    if (sub && k != null && sub.dataset.k !== String(k)) {
+      sub.dataset.k = k;
+      var x = ss[k];
+      if (x && x.etapa === n) {
+        var irmas = ss.filter(function (y) { return y.etapa === n; }), pos = irmas.indexOf(x) + 1;
+        sub.innerHTML = "▸ <b>" + escapar(x.nome) + "</b>" + (x.refs.length ? " — " + escapar(x.refs.join("; ")) : "") + (irmas.length > 1 ? ' <span class="dica">(' + pos + " de " + irmas.length + ")</span>" : "");
+      } else sub.innerHTML = "";
+      document.querySelectorAll("[data-tc-sub]").forEach(function (b) { b.classList.toggle("ativo", +b.dataset.tcSub === k); });
     }
   }
   function tocadorHtml() {
@@ -790,11 +824,13 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var et = tocando.etapas || [];
     return '<div class="tocador" id="tocador"><div class="tc-cab"><b>🎧 ' + escapar(tocando.titulo) + '</b><button class="ico" type="button" id="tc-fechar" aria-label="Fechar o tocador">✕</button></div>' +
       (et.length ? '<div class="tc-etapa" id="tc-etapa" aria-live="polite"></div>' : "") +
+      ((tocando.subs || []).length ? '<div class="tc-sub" id="tc-sub"></div>' : "") +
       '<audio id="tc-audio" data-voz controls src="' + urlTocando + '"></audio>' +
       '<div class="tc-pulos"><button class="btn" type="button" data-tc-pulo="-10" aria-label="Voltar 10 segundos">⏪ 10s</button>' +
       '<button class="btn primario" type="button" data-tc-playpause aria-label="Tocar ou pausar">▶ Tocar</button>' +
       '<button class="btn" type="button" data-tc-pulo="10" aria-label="Avançar 10 segundos">10s ⏩</button></div>' +
       (et.length ? '<div class="tc-etapas">' + et.map(function (x, j) { return '<button class="chip-st" type="button" data-tc-ir="' + j + '" title="Ir para ' + escapar(x.parte) + '">' + escapar(x.parte.split(" ")[0]) + "</button>"; }).join("") + "</div>" : "") +
+      ((tocando.subs || []).length ? '<div class="tc-subs" id="tc-subs"></div>' : "") +
       controleGanho() + controlesMusica(false) + "</div>";
   }
   function blocoOracoes() {
@@ -829,13 +865,18 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var o = oracoes.find(function (x) { return x.arquivo === arq; }) || {};
     tocando = { arq: arq, k: k, titulo: (o.titulo || "Oração") + (g.nome ? " · " + g.nome : "") };
     // Programação de trilhas desta oração
-    var plano = [];
+    var plano = [], subs = [];
     try {
       var d = await (await fetch("oracoes/" + arq)).json();
       mus.trilhas = d.trilhas || null;
       plano = tempos(etapasDaOracao(d.paragrafos, d.trilhas), d.paragrafos || [], g.duracao || 0, g.marcas);
+      var tp = temposParagrafos(d.paragrafos || [], g.duracao || 0, g.marcas, plano);
+      subs = (d.subetapas || []).map(function (x) {
+        var e = -1; plano.forEach(function (et, j) { if (et.i <= x.i) e = j; });
+        return { i: x.i, nome: x.nome, refs: x.refs || [], t: tp[x.i] || 0, etapa: e };
+      });
     } catch (e) { mus.trilhas = null; }
-    tocando.etapas = plano;
+    tocando.etapas = plano; tocando.subs = subs;
     var primeira = plano.filter(function (x) { return x.musica; })[0];
     mus.idAuto = ""; if (primeira) musTrocarPara(primeira.musica);
     window.sincronizarTrilha = function () {
@@ -843,9 +884,10 @@ body.com-tocador .estante { padding-bottom: 460px; }
       var m = primeira ? primeira.musica : "", n = -1;
       plano.forEach(function (x, j) { if (x.t <= a.currentTime + 0.3) { n = j; if (x.musica) m = x.musica; } });
       if (m) musTrocarPara(m);
-      mostrarEtapa(n < 0 ? 0 : n);
+      var k = -1; subs.forEach(function (x, j) { if (x.t <= a.currentTime + 0.3) k = j; });
+      mostrarEtapa(n < 0 ? 0 : n, k);
     };
-    $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr(); mostrarEtapa(0);
+    $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr(); mostrarEtapa(0, 0);
     var a = $("tc-audio"); if (!a) return;
     var inicio = true;
     a.addEventListener("play", function () { if (mus.ligada && !inicio) musTocar(1500); });
@@ -860,11 +902,12 @@ body.com-tocador .estante { padding-bottom: 460px; }
     if (tocando && tocando.k === k) { try { await a.play(); } catch (e) {} }
   }
   $("tocador-or").addEventListener("click", function (ev) {
-    var a0 = $("tc-audio"), bt = ev.target.closest("[data-tc-pulo],[data-tc-playpause],[data-tc-ir]");
+    var a0 = $("tc-audio"), bt = ev.target.closest("[data-tc-pulo],[data-tc-playpause],[data-tc-ir],[data-tc-sub]");
     if (bt && a0) {
       var fim = isFinite(a0.duration) ? a0.duration : 1e9;
       if (bt.dataset.tcPulo) a0.currentTime = Math.max(0, Math.min(fim - 0.1, a0.currentTime + parseFloat(bt.dataset.tcPulo)));
       else if ("tcPlaypause" in bt.dataset) { if (a0.paused) a0.play(); else a0.pause(); }
+      else if (bt.dataset.tcSub != null) { var y = tocando && tocando.subs && tocando.subs[+bt.dataset.tcSub]; if (y) { a0.currentTime = Math.max(0, y.t); if (a0.paused) a0.play(); } }
       else { var x = tocando && tocando.etapas && tocando.etapas[+bt.dataset.tcIr]; if (x) { a0.currentTime = Math.max(0, x.t); if (a0.paused) a0.play(); } }
       if (window.sincronizarTrilha) window.sincronizarTrilha();
       return;
@@ -1011,7 +1054,8 @@ body.com-tocador .estante { padding-bottom: 460px; }
         var au = l.fonte ? await carregarAula(l.fonte) : ((await carregarAula()) || aulaAtual);
         if (!au) throw new Error(l.fonte ? "a oração não está disponível agora" : "a aula não está disponível agora");
         if (!l.fonte) aulaAtual = au;
-        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo }, paras: au.paragrafos, trilhas: au.trilhas || null };
+        atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo }, paras: au.paragrafos, trilhas: au.trilhas || null,
+          subs: (au.subetapas || []).reduce(function (m, x) { m[x.i] = x.nome + (x.refs && x.refs.length ? " · " + x.refs.join("; ") : ""); return m; }, {}) };
         if (!tocando) { mus.trilhas = atual.trilhas; mus.idAuto = ""; var pc = partesComTrilha(atual.paras, atual.trilhas); if (pc.length) musTrocarPara(pc[0].musica); }
         $("nome-livro").textContent = (l.fonte ? "🙏 " : "🎓 ") + (au.titulo || "Aula");
         pdf = { aula: true, paras: au.paragrafos, numPages: 1 };
@@ -1093,7 +1137,8 @@ body.com-tocador .estante { padding-bottom: 460px; }
     el.innerHTML = paras.length
       ? paras.map(function (t, i) {
           var num = vs && vs[i] ? '<sup class="vn" translate="no">' + escapar(vs[i][0]) + "</sup>" : "";
-          return "<p>" + num + escapar(t) + "</p>";
+          var sb = el.id === "orig" && atual && atual.subs ? atual.subs[i] : null;
+          return "<p" + (sb ? ' data-sub="' + escapar(sb) + '"' : "") + ">" + num + escapar(t) + "</p>";
         }).join("")
       : '<p class="nada">Esta página não tem texto.</p>';
     el.scrollTop = 0;

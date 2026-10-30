@@ -54,5 +54,49 @@
    "musica": "1NGXjv3kiB2VqKk3X3Da-6gIyS6GNvher",
    "titulo": "Pastoral"
   }
+ ],
+ "subetapas": [
+  {
+   "i": 2,
+   "nome": "Medo, inveja e palavras",
+   "refs": []
+  },
+  {
+   "i": 4,
+   "nome": "Meu Pastor",
+   "refs": [
+    "Salmos 23.1",
+    "Salmos 23.4",
+    "Salmos 20.7"
+   ]
+  },
+  {
+   "i": 6,
+   "nome": "A vara de Moisés",
+   "refs": [
+    "Êxodo 4.2-4",
+    "Romanos 10.13"
+   ]
+  },
+  {
+   "i": 8,
+   "nome": "Família",
+   "refs": []
+  },
+  {
+   "i": 10,
+   "nome": "Curitiba e carreira",
+   "refs": []
+  },
+  {
+   "i": 12,
+   "nome": "Declarações",
+   "refs": []
+  },
+  {
+   "i": 14,
+   "nome": "Gratidão",
+   "refs": []
+  }
  ]
 }
