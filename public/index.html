@@ -108,6 +108,12 @@ body.modo-aula .pag { display: none; }
 .abas-estante { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
 .aba-est { flex: 1; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 600; font-size: 15px; padding: 10px 6px; color: var(--muted); cursor: pointer; }
 .aba-est.ativo { color: var(--accent); border-bottom-color: var(--accent); }
+.tc-etapa { display: flex; align-items: baseline; gap: 10px; padding: 2px 2px 0; }
+.tc-etapa-nome { font-family: var(--font-display, serif); font-size: 22px; font-weight: 700; color: var(--accent); }
+.tc-pulos { display: flex; gap: 8px; justify-content: center; }
+.tc-pulos .btn { min-height: 48px; min-width: 88px; font-size: 17px; }
+.tc-etapas { display: flex; flex-wrap: wrap; gap: 6px; }
+.tc-etapas .chip-st { font-size: 13px; padding: 6px 10px; }
 .grav-marcas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .grav-marcas .btn.marcada { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .vol-linha { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
@@ -155,7 +161,7 @@ body.modo-aula .pag { display: none; }
 .or-campo { display: block; width: 100%; box-sizing: border-box; height: 36px; margin-top: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--bg); }
 .or-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .tocador { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; width: min(728px, calc(100% - 32px)); box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--paper); box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
-body.com-tocador .estante { padding-bottom: 280px; }
+body.com-tocador .estante { padding-bottom: 460px; }
 .musica-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
 .musica-ctl select { max-width: 220px; }
 .musica-ctl input[type=range] { width: 110px; }
@@ -561,6 +567,15 @@ body.com-tocador .estante { padding-bottom: 280px; }
     paras.forEach(function (txt, i) { var t = mapa[normParte(txt)]; if (t && String(txt).length < 60) l.push({ i: i, parte: t.parte, musica: t.musica }); });
     return l;
   }
+  // As 7 etapas da oração, com a trilha de cada uma (quando houver).
+  var ETAPAS = ["Perdão dos pecados", "Honrar a Deus", "Passagem bíblica", "Intercessão", "Clamor", "Profecias", "Agradecimento"];
+  function etapasDaOracao(paras, trilhas) {
+    var nomes = {}; ETAPAS.forEach(function (e) { nomes[normParte(e)] = e; });
+    var mus = {}; (trilhas || []).forEach(function (t) { if (t && t.parte) { mus[normParte(t.parte)] = t.musica; nomes[normParte(t.parte)] = nomes[normParte(t.parte)] || t.parte; } });
+    var l = [];
+    (paras || []).forEach(function (txt, i) { var k = normParte(txt); if (nomes[k] && String(txt).length < 60) l.push({ i: i, parte: nomes[k], musica: mus[k] || "" }); });
+    return l;
+  }
   function trilhaNoParagrafo(partes, idx) {
     var m = partes.length ? partes[0].musica : "";
     partes.forEach(function (p) { if (p.i <= idx) m = p.musica; });
@@ -762,10 +777,25 @@ body.com-tocador .estante { padding-bottom: 280px; }
         return '<button class="chip-tag' + (semAcento(x.t) === semAcento(filtroTag) ? " ativo" : "") + '" type="button" data-or-tag="' + escapar(x.t) + '">#' + escapar(x.t) + " <small>" + x.n + "</small></button>";
       }).join("") + (tags.length > 12 ? '<button class="link-det" type="button" data-or-temas>' + (verTodosTemas ? "menos temas" : "+" + (tags.length - 12) + " temas") + "</button>" : "") + "</div>" : "");
   }
+  function mostrarEtapa(n) {
+    var et = tocando && tocando.etapas; if (!et || !et.length) return;
+    var el = $("tc-etapa"); if (el && el.dataset.n !== String(n)) {
+      el.dataset.n = n;
+      el.innerHTML = '<span class="tc-etapa-nome">' + escapar(et[n].parte) + '</span><span class="dica">etapa ' + (n + 1) + " de " + et.length + "</span>";
+      document.querySelectorAll("[data-tc-ir]").forEach(function (b) { b.classList.toggle("ativo", +b.dataset.tcIr === n); });
+    }
+  }
   function tocadorHtml() {
     if (!tocando) return "";
+    var et = tocando.etapas || [];
     return '<div class="tocador" id="tocador"><div class="tc-cab"><b>🎧 ' + escapar(tocando.titulo) + '</b><button class="ico" type="button" id="tc-fechar" aria-label="Fechar o tocador">✕</button></div>' +
-      '<audio id="tc-audio" data-voz controls src="' + urlTocando + '"></audio>' + controleGanho() + controlesMusica(false) + "</div>";
+      (et.length ? '<div class="tc-etapa" id="tc-etapa" aria-live="polite"></div>' : "") +
+      '<audio id="tc-audio" data-voz controls src="' + urlTocando + '"></audio>' +
+      '<div class="tc-pulos"><button class="btn" type="button" data-tc-pulo="-10" aria-label="Voltar 10 segundos">⏪ 10s</button>' +
+      '<button class="btn primario" type="button" data-tc-playpause aria-label="Tocar ou pausar">▶ Tocar</button>' +
+      '<button class="btn" type="button" data-tc-pulo="10" aria-label="Avançar 10 segundos">10s ⏩</button></div>' +
+      (et.length ? '<div class="tc-etapas">' + et.map(function (x, j) { return '<button class="chip-st" type="button" data-tc-ir="' + j + '" title="Ir para ' + escapar(x.parte) + '">' + escapar(x.parte.split(" ")[0]) + "</button>"; }).join("") + "</div>" : "") +
+      controleGanho() + controlesMusica(false) + "</div>";
   }
   function blocoOracoes() {
     if (!oracoes.length && !Object.keys(rasc).length) return "";
@@ -803,20 +833,26 @@ body.com-tocador .estante { padding-bottom: 280px; }
     try {
       var d = await (await fetch("oracoes/" + arq)).json();
       mus.trilhas = d.trilhas || null;
-      plano = tempos(partesComTrilha(d.paragrafos, d.trilhas), d.paragrafos || [], g.duracao || 0, g.marcas);
+      plano = tempos(etapasDaOracao(d.paragrafos, d.trilhas), d.paragrafos || [], g.duracao || 0, g.marcas);
     } catch (e) { mus.trilhas = null; }
-    mus.idAuto = ""; if (plano.length) musTrocarPara(plano[0].musica);
+    tocando.etapas = plano;
+    var primeira = plano.filter(function (x) { return x.musica; })[0];
+    mus.idAuto = ""; if (primeira) musTrocarPara(primeira.musica);
     window.sincronizarTrilha = function () {
       var a = $("tc-audio"); if (!a || !plano.length) return;
-      var m = plano[0].musica; plano.forEach(function (x) { if (x.t <= a.currentTime + 0.3) m = x.musica; });
-      musTrocarPara(m);
+      var m = primeira ? primeira.musica : "", n = -1;
+      plano.forEach(function (x, j) { if (x.t <= a.currentTime + 0.3) { n = j; if (x.musica) m = x.musica; } });
+      if (m) musTrocarPara(m);
+      mostrarEtapa(n < 0 ? 0 : n);
     };
-    $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr();
+    $("tocador-or").innerHTML = tocadorHtml(); document.body.classList.add("com-tocador"); atualizarListaOr(); mostrarEtapa(0);
     var a = $("tc-audio"); if (!a) return;
     var inicio = true;
     a.addEventListener("play", function () { if (mus.ligada && !inicio) musTocar(1500); });
     a.addEventListener("pause", function () { if (!a.ended) musParar(800); });
     a.addEventListener("ended", function () { musParar(5000); });
+    var pp = function () { var b = document.querySelector("[data-tc-playpause]"); if (b) b.textContent = a.paused ? "▶ Tocar" : "⏸ Pausar"; };
+    a.addEventListener("play", pp); a.addEventListener("pause", pp); a.addEventListener("ended", pp);
     a.addEventListener("timeupdate", function () { if (window.sincronizarTrilha) window.sincronizarTrilha(); });
     a.addEventListener("seeked", function () { if (window.sincronizarTrilha) window.sincronizarTrilha(); });
     if (mus.ligada && mus.lista.length) { musTocar(3000); await new Promise(function (ok) { setTimeout(ok, 3000); }); }
@@ -824,6 +860,15 @@ body.com-tocador .estante { padding-bottom: 280px; }
     if (tocando && tocando.k === k) { try { await a.play(); } catch (e) {} }
   }
   $("tocador-or").addEventListener("click", function (ev) {
+    var a0 = $("tc-audio"), bt = ev.target.closest("[data-tc-pulo],[data-tc-playpause],[data-tc-ir]");
+    if (bt && a0) {
+      var fim = isFinite(a0.duration) ? a0.duration : 1e9;
+      if (bt.dataset.tcPulo) a0.currentTime = Math.max(0, Math.min(fim - 0.1, a0.currentTime + parseFloat(bt.dataset.tcPulo)));
+      else if ("tcPlaypause" in bt.dataset) { if (a0.paused) a0.play(); else a0.pause(); }
+      else { var x = tocando && tocando.etapas && tocando.etapas[+bt.dataset.tcIr]; if (x) { a0.currentTime = Math.max(0, x.t); if (a0.paused) a0.play(); } }
+      if (window.sincronizarTrilha) window.sincronizarTrilha();
+      return;
+    }
     if (!ev.target.closest("#tc-fechar")) return;
     var a = $("tc-audio"); if (a) a.pause(); if (urlTocando) URL.revokeObjectURL(urlTocando);
     musParar(800); window.sincronizarTrilha = null; mus.trilhas = null; mus.idAuto = "";
