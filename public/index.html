@@ -122,6 +122,11 @@ body.modo-aula .pag { display: none; }
 .grav-marcas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .grav-marcas .btn.marcada { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .vol-linha { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.barra-leitura { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; width: min(728px, calc(100% - 24px)); box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--paper); box-shadow: 0 -4px 16px rgba(0,0,0,.1); font-family: var(--font-ui); }
+.barra-leitura .bl-pulos { display: flex; gap: 8px; justify-content: center; }
+.barra-leitura .bl-pulos .btn { min-height: 48px; min-width: 92px; font-size: 17px; }
+.barra-leitura .vol-linha { padding: 2px 0; }
+body.com-barra-leitura .texto { padding-bottom: 260px; }
 .vol-nome { min-width: 76px; font-size: 16px; font-weight: 600; }
 .vol-btn { width: 48px; height: 48px; flex: none; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 26px; line-height: 1; cursor: pointer; color: inherit; }
 .vol-btn:active { background: var(--accent-soft); }
@@ -514,6 +519,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var b = ev.target.closest(".vol-btn"); if (!b) return;
     var d = parseFloat(b.dataset.passo) || 0;
     if (b.dataset.vol === "voz") aplicarGanho(Math.max(0, Math.min(3, Math.round((ganho.v + d) * 100) / 100)));
+    else if (b.dataset.vol === "fala") aplicarFalaVol(Math.max(0, Math.min(1, Math.round((falaVol + d * 2) * 100) / 100)));
     else volumeMusica(Math.max(0, Math.min(1, Math.round((mus.vol + d) * 100) / 100)));
   });
   function controleGanho() {
@@ -1330,7 +1336,8 @@ body.com-tocador .estante { padding-bottom: 460px; }
 
   // ---------- Audio (voz do sistema) ----------
   // estado: "tocando" ou "pausado". Pausar guarda o paragrafo; Continuar recomeca dele.
-  var audio = { qual: null, estado: null, idx: 0, sub: 0, sessao: 0 };
+  var audio = { qual: null, estado: null, idx: 0, sub: 0, sessao: 0, off: 0, ini: 0, pos: 0, t0: 0, borda: false };
+  var falaVol = parseFloat(lerPref("leitor.fala.vol", "1")); if (!(falaVol >= 0 && falaVol <= 1)) falaVol = 1;
   var inicioEscolhido = { orig: null, trad: null, fixo: null };
   var ultimaJanelaMarcada = null;
   var JANELAS = ["orig", "trad", "fixo"];
@@ -1463,6 +1470,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       else if (audio.qual === q && audio.estado === "pausado") { b.textContent = "▶"; b.title = "Continuar"; s.hidden = false; }
       else { b.textContent = "▶"; b.title = "Ouvir"; s.hidden = true; }
     });
+    atualizarBarraLeitura();
   }
   function limparDestaque() {
     document.querySelectorAll("p.falando").forEach(function (p) { p.classList.remove("falando"); });
@@ -1481,6 +1489,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     atualizarBotoes();
   }
   function pausar() {
+    if (audio.qual && audio.qual !== "todas") audio.off = posicaoNoParagrafo();
     audio.sessao++;
     speechSynthesis.cancel();
     audio.estado = "pausado";
@@ -1492,7 +1501,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     if (qual === "fixo") return $("idioma3").value;
     return idiomaDaTraducao();
   }
-  function tocarDe(qual, idx) {
+  function tocarDe(qual, idx, off) {
     if (!window.speechSynthesis) { setStatus("Este navegador não tem leitura em voz alta.", "warn"); return; }
     speechSynthesis.cancel();
     audio.sessao++;
@@ -1518,11 +1527,16 @@ body.com-tocador .estante { padding-bottom: 460px; }
         var pcs = partesComTrilha(atual.paras, atual.trilhas);
         if (pcs.length) { musTrocarPara(trilhaNoParagrafo(pcs, audio.idx)); if (mus.ligada && !mus.tocando && audio.idx === idx) musTocar(2000); }
       }
-      var u = new SpeechSynthesisUtterance(textoFala(p));
+      var txt = textoFala(p), ini = 0;
+      if (off && audio.idx === idx) { ini = inicioDePalavra(txt, off); off = 0; }
+      audio.ini = ini; audio.pos = ini; audio.t0 = Date.now(); audio.borda = false;
+      var u = new SpeechSynthesisUtterance(txt.slice(ini));
       u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
       if (voz) u.voice = voz;
       u.rate = obterVelocidade(lang);
-      var seguir = function () { if (sessao !== audio.sessao) return; audio.idx++; prox(); };
+      u.volume = falaVol;
+      u.onboundary = function (e) { if (sessao !== audio.sessao) return; audio.borda = true; audio.pos = ini + (e.charIndex || 0); audio.t0 = Date.now(); };
+      var seguir = function () { if (sessao !== audio.sessao) return; audio.idx++; audio.ini = 0; audio.pos = 0; prox(); };
       u.onend = seguir;
       u.onerror = seguir;
       speechSynthesis.speak(u);
@@ -1532,10 +1546,68 @@ body.com-tocador .estante { padding-bottom: 460px; }
     if (audio.qual === qual && audio.estado === "tocando") { pausar(); return; }
     var inicio = 0;
     if (inicioEscolhido[qual] != null) inicio = inicioEscolhido[qual];
-    else if (audio.qual === qual && audio.estado === "pausado") inicio = audio.idx;
+    var off = 0;
+    if (inicioEscolhido[qual] == null && audio.qual === qual && audio.estado === "pausado") { inicio = audio.idx; off = audio.off || 0; }
     if (audio.qual && audio.qual !== qual) { var guardado = inicioEscolhido[qual]; pararAudio(); if (guardado != null) inicio = guardado; }
-    tocarDe(qual, inicio);
+    tocarDe(qual, inicio, off);
   }
+  // ---------- Barra de controle da leitura em voz alta ----------
+  // Pular 10 s: a fala do navegador não tem relógio, então estimamos ~14 letras por segundo na velocidade 1.
+  function inicioDePalavra(t, i) { i = Math.max(0, Math.min(t.length, i)); while (i > 0 && !/\s/.test(t[i - 1])) i--; return i; }
+  function letrasPorSeg(qual) { return 14 * (obterVelocidade(idiomaDe(qual)) || 1); }
+  function posicaoNoParagrafo() {
+    if (audio.estado !== "tocando") return audio.off || 0;
+    var extra = (Date.now() - audio.t0) / 1000 * letrasPorSeg(audio.qual);
+    return Math.round(audio.pos + (audio.borda ? Math.min(extra, 40) : extra));
+  }
+  function pularLeitura(seg) {
+    var q = audio.qual; if (!q) return;
+    if (q === "todas") { var ni = Math.max(0, audio.idx + (seg > 0 ? 1 : -1)); tocarAlternado(ni, 0); return; }
+    var ps = paragrafosDe($(q)); if (!ps.length) return;
+    var tam = Array.prototype.map.call(ps, function (p) { return textoFala(p).length; });
+    var pos = 0; for (var i = 0; i < audio.idx; i++) pos += tam[i];
+    pos += posicaoNoParagrafo() + seg * letrasPorSeg(q);
+    pos = Math.max(0, pos);
+    var idx = 0; while (idx < tam.length - 1 && pos >= tam[idx]) { pos -= tam[idx]; idx++; }
+    if (idx === tam.length - 1 && pos >= tam[idx]) pos = Math.max(0, tam[idx] - 1);
+    tocarDe(q, idx, pos);
+  }
+  function aplicarFalaVol(v) {
+    falaVol = v; gravarPref("leitor.fala.vol", String(v));
+    document.querySelectorAll("[data-fala-vol]").forEach(function (i) { if (+i.value !== v) i.value = v; });
+    document.querySelectorAll('[data-vol-val="fala"]').forEach(function (o) { o.textContent = Math.round(v * 100) + "%"; });
+    // A fala do navegador só aceita volume novo na próxima frase: recomeça de onde está.
+    if (audio.qual && audio.qual !== "todas" && audio.estado === "tocando") tocarDe(audio.qual, audio.idx, posicaoNoParagrafo());
+  }
+  function barraLeituraHtml() {
+    var lendo = audio.estado === "tocando";
+    return '<div class="bl-pulos"><button class="btn" type="button" data-bl-pulo="-10" aria-label="Voltar 10 segundos">− 10s</button>' +
+      '<button class="btn primario" type="button" data-bl-pp aria-label="' + (lendo ? "Pausar" : "Continuar") + '">' + (lendo ? "⏸ Pausar" : "▶ Continuar") + "</button>" +
+      '<button class="btn" type="button" data-bl-pulo="10" aria-label="Avançar 10 segundos">+ 10s</button></div>' +
+      linhaVolume("🗣 Voz", "fala", 0, 1, 0.05, falaVol, "data-fala-vol") +
+      linhaVolume("♪ Música", "musica", 0, 1, 0.01, mus.vol, "data-mus-vol");
+  }
+  function atualizarBarraLeitura() {
+    var el = $("barra-leitura"); if (!el) return;
+    var ativo = !!audio.qual && !!audio.estado && !$("tela-leitor").hidden;
+    el.hidden = !ativo; document.body.classList.toggle("com-barra-leitura", ativo);
+    if (!ativo) return;
+    var pp = el.querySelector("[data-bl-pp]");
+    if (!pp) el.innerHTML = barraLeituraHtml();
+    else { var lendo = audio.estado === "tocando"; pp.textContent = lendo ? "⏸ Pausar" : "▶ Continuar"; pp.setAttribute("aria-label", lendo ? "Pausar" : "Continuar"); }
+  }
+  (function () {
+    var el = document.createElement("div"); el.className = "barra-leitura"; el.id = "barra-leitura"; el.hidden = true;
+    $("tela-leitor").appendChild(el);
+    el.addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-bl-pulo],[data-bl-pp]"); if (!b) return;
+      if (b.dataset.blPulo) { pularLeitura(parseFloat(b.dataset.blPulo)); return; }
+      if (audio.qual === "todas") { $("alternar").click(); return; }
+      if (audio.qual) ouvir(audio.qual);
+    });
+    document.addEventListener("input", function (ev) { if (ev.target.matches && ev.target.matches("[data-fala-vol]")) aplicarFalaVol(parseFloat(ev.target.value) || 0); });
+  })();
+
   // ---------- Leitura alternada ----------
   // Paragrafo 1 em cada coluna visivel (original, traducao, 3a), depois o 2, etc.
   function tocarAlternado(idx, sub) {
@@ -1567,6 +1639,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
       if (voz) u.voice = voz;
       u.rate = obterVelocidade(lang);
+      u.volume = falaVol;
       u.onend = seguir;
       u.onerror = seguir;
       speechSynthesis.speak(u);
