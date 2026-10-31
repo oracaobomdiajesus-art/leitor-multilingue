@@ -124,7 +124,10 @@ body.modo-aula .pag { display: none; }
 .vol-linha { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
 .barra-leitura { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; width: min(728px, calc(100% - 24px)); box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--paper); box-shadow: 0 -4px 16px rgba(0,0,0,.1); font-family: var(--font-ui); }
 .barra-leitura .bl-pulos { display: flex; gap: 8px; justify-content: center; }
-.barra-leitura .bl-pulos .btn { min-height: 48px; min-width: 92px; font-size: 17px; }
+.barra-leitura .bl-pulos .btn { min-height: 48px; min-width: 0; flex: 1 1 0; white-space: nowrap; padding: 0 8px; font-size: 17px; }
+.barra-leitura .bl-pulos .bl-rec { flex: 0 0 48px; }
+.barra-leitura.recolhida > :not(.bl-pulos) { display: none !important; }
+body.com-barra-leitura.barra-recolhida .texto { padding-bottom: 120px; }
 .barra-leitura .vol-linha { padding: 2px 0; }
 .barra-leitura .bl-mus { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .barra-leitura .bl-mus .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -1588,12 +1591,19 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var lendo = audio.estado === "tocando";
     return '<div class="bl-pulos"><button class="btn" type="button" data-bl-pulo="-10" aria-label="Voltar 10 segundos">− 10s</button>' +
       '<button class="btn primario" type="button" data-bl-pp aria-label="' + (lendo ? "Pausar" : "Continuar") + '">' + (lendo ? "⏸ Pausar" : "▶ Continuar") + "</button>" +
-      '<button class="btn" type="button" data-bl-pulo="10" aria-label="Avançar 10 segundos">+ 10s</button></div>' +
+      '<button class="btn" type="button" data-bl-pulo="10" aria-label="Avançar 10 segundos">+ 10s</button>' +
+      '<button class="btn bl-rec" type="button" data-bl-rec aria-label="Ocultar ou mostrar os controles">' + (blRecolhida ? "▴" : "▾") + "</button></div>" +
       linhaVolume("🗣 Voz", "fala", 0, 1, 0.05, falaVol, "data-fala-vol") +
       '<div class="bl-mus"><button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button>" +
       (mus.trilhas ? '<button class="btn" type="button" data-mus-auto aria-pressed="' + (mus.auto ? "true" : "false") + '">🎼 Trilhas da oração ' + (mus.auto ? "ligadas" : "desligadas") + "</button>" : "") + "</div>" +
       '<select class="sel bl-sel" data-mus-sel aria-label="Escolher a música">' + mus.lista.map(function (m) { return '<option value="' + escapar(m.id) + '"' + (m.id === idMusicaAtual() ? " selected" : "") + ">" + escapar((m.clima ? m.clima + " · " : "") + m.titulo) + "</option>"; }).join("") + "</select>" +
       linhaVolume("♪ Música", "musica", 0, 1, 0.01, mus.vol, "data-mus-vol");
+  }
+  var blRecolhida = lerPref("leitor.barra.recolhida", "0") === "1";
+  function aplicarRecolhida() {
+    var el = $("barra-leitura"); if (!el) return;
+    el.classList.toggle("recolhida", blRecolhida); document.body.classList.toggle("barra-recolhida", blRecolhida);
+    var b = el.querySelector("[data-bl-rec]"); if (b) { b.textContent = blRecolhida ? "▴" : "▾"; b.title = blRecolhida ? "Mostrar volume e músicas" : "Ocultar volume e músicas"; }
   }
   function atualizarBarraLeitura() {
     var el = $("barra-leitura"); if (!el) return;
@@ -1601,14 +1611,15 @@ body.com-tocador .estante { padding-bottom: 460px; }
     el.hidden = !ativo; document.body.classList.toggle("com-barra-leitura", ativo);
     if (!ativo) return;
     var pp = el.querySelector("[data-bl-pp]");
-    if (!pp) el.innerHTML = barraLeituraHtml();
+    if (!pp) { el.innerHTML = barraLeituraHtml(); aplicarRecolhida(); }
     else { var lendo = audio.estado === "tocando"; pp.textContent = lendo ? "⏸ Pausar" : "▶ Continuar"; pp.setAttribute("aria-label", lendo ? "Pausar" : "Continuar"); }
   }
   (function () {
     var el = document.createElement("div"); el.className = "barra-leitura"; el.id = "barra-leitura"; el.hidden = true;
     $("tela-leitor").appendChild(el);
     el.addEventListener("click", function (ev) {
-      var b = ev.target.closest("[data-bl-pulo],[data-bl-pp]"); if (!b) return;
+      var b = ev.target.closest("[data-bl-pulo],[data-bl-pp],[data-bl-rec]"); if (!b) return;
+      if ("blRec" in b.dataset) { blRecolhida = !blRecolhida; gravarPref("leitor.barra.recolhida", blRecolhida ? "1" : "0"); aplicarRecolhida(); return; }
       if (b.dataset.blPulo) { pularLeitura(parseFloat(b.dataset.blPulo)); return; }
       if (audio.qual === "todas") { $("alternar").click(); return; }
       if (audio.qual) ouvir(audio.qual);
