@@ -1,6 +1,72 @@
 {
  "oracoes": [
   {
+   "arquivo": "2026-10-31-familia.json",
+   "titulo": "Oração pela família de 31 de outubro de 2026",
+   "data": "2026-10-31",
+   "resumo": "Família · Libertação da mente · Deus do impossível",
+   "tags": [
+    "família",
+    "libertação",
+    "mente",
+    "providência",
+    "Ezequias",
+    "cura",
+    "Samuel",
+    "Reforma",
+    "Israel"
+   ],
+   "referencias": [
+    "Neemias 1.6",
+    "Salmos 46.1",
+    "Isaías 38.5",
+    "2 Coríntios 10.4",
+    "Êxodo 15.26",
+    "Ezequiel 36.26",
+    "Salmos 19.14",
+    "Salmos 121.4",
+    "Isaías 61.1",
+    "Salmos 127.1",
+    "Lucas 1.37",
+    "Josué 24.15",
+    "Salmos 126.3"
+   ]
+  },
+  {
+   "arquivo": "2026-10-31-pessoal.json",
+   "titulo": "Oração pessoal de 31 de outubro de 2026",
+   "data": "2026-10-31",
+   "resumo": "Libertação de cativeiros mentais · Providência no impossível · Discernimento",
+   "tags": [
+    "libertação",
+    "mente",
+    "providência",
+    "Ezequias",
+    "paz",
+    "discernimento",
+    "parcerias",
+    "carreira",
+    "ministério",
+    "Revelar"
+   ],
+   "referencias": [
+    "Isaías 38.17",
+    "Jeremias 32.27",
+    "2 Coríntios 10.3-5",
+    "2 Reis 20.2-3",
+    "2 Reis 20.5-6",
+    "Provérbios 31.25-26",
+    "João 8.36",
+    "2 Coríntios 6.14",
+    "1 João 4.1",
+    "Filipenses 1.9-10",
+    "Salmos 32.8",
+    "João 14.27",
+    "Isaías 43.19",
+    "Isaías 26.3"
+   ]
+  },
+  {
    "arquivo": "2026-10-30-pessoal.json",
    "titulo": "Oração pessoal de 30 de outubro de 2026",
    "data": "2026-10-30",
