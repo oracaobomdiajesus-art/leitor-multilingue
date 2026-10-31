@@ -126,6 +126,9 @@ body.modo-aula .pag { display: none; }
 .barra-leitura .bl-pulos { display: flex; gap: 8px; justify-content: center; }
 .barra-leitura .bl-pulos .btn { min-height: 48px; min-width: 92px; font-size: 17px; }
 .barra-leitura .vol-linha { padding: 2px 0; }
+.barra-leitura .bl-mus { display: flex; justify-content: center; }
+.barra-leitura .bl-mus .btn { min-height: 44px; font-size: 16px; }
+body.com-barra-leitura .texto { padding-bottom: 320px; }
 body.com-barra-leitura .texto { padding-bottom: 260px; }
 .vol-nome { min-width: 76px; font-size: 16px; font-weight: 600; }
 .vol-btn { width: 48px; height: 48px; flex: none; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 26px; line-height: 1; cursor: pointer; color: inherit; }
@@ -658,7 +661,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       else if (mus.tocando && mus.idAuto && mus.idAuto !== mus.id) { mus.idAuto = ""; mostrarMusicaNoSeletor(mus.id); musFade(0, 1200, function () { if (mus.tocando) { mus.el.pause(); musTocar(1500); } }); }
       return;
     }
-    if ("musPlay" in b.dataset) { if (mus.tocando) musParar(1500); else musTocar(2000); return; }
+    if ("musPlay" in b.dataset) { if (mus.tocando) { mus.pausadaUsuario = true; musParar(1500); } else { mus.pausadaUsuario = false; musTocar(2000); } return; }
     mus.ligada = !mus.ligada; gravarPref("leitor.musica.on", mus.ligada ? "1" : "0");
     var voz = $("tc-audio");
     if (mus.ligada && voz && !voz.paused) musTocar(2000); else if (!mus.ligada) musParar(1200);
@@ -1525,7 +1528,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       p.scrollIntoView({ block: "nearest" });
       if (atual && atual.trilhas && !tocando) {
         var pcs = partesComTrilha(atual.paras, atual.trilhas);
-        if (pcs.length) { musTrocarPara(trilhaNoParagrafo(pcs, audio.idx)); if (mus.ligada && !mus.tocando && audio.idx === idx) musTocar(2000); }
+        if (pcs.length) { musTrocarPara(trilhaNoParagrafo(pcs, audio.idx)); if (mus.ligada && !mus.tocando && !mus.pausadaUsuario && audio.idx === idx) musTocar(2000); }
       }
       var txt = textoFala(p), ini = 0;
       if (off && audio.idx === idx) { ini = inicioDePalavra(txt, off); off = 0; }
@@ -1585,6 +1588,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       '<button class="btn primario" type="button" data-bl-pp aria-label="' + (lendo ? "Pausar" : "Continuar") + '">' + (lendo ? "⏸ Pausar" : "▶ Continuar") + "</button>" +
       '<button class="btn" type="button" data-bl-pulo="10" aria-label="Avançar 10 segundos">+ 10s</button></div>' +
       linhaVolume("🗣 Voz", "fala", 0, 1, 0.05, falaVol, "data-fala-vol") +
+      '<div class="bl-mus"><button class="btn" type="button" data-mus-play>' + (mus.tocando ? "⏸ Parar música" : "▶ Tocar música") + "</button></div>" +
       linhaVolume("♪ Música", "musica", 0, 1, 0.01, mus.vol, "data-mus-vol");
   }
   function atualizarBarraLeitura() {
