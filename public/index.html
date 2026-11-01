@@ -1410,17 +1410,17 @@ body.com-tocador .estante { padding-bottom: 460px; }
       var velAtual = obterVelocidade(l);
       var velOps = VELOCIDADES.map(function (v) {
         return '<option value="' + v + '"' + (Math.abs(v - velAtual) < 0.01 ? " selected" : "") + ">" +
-          String(v).replace(".", ",") + "x" + "</option>";
+          "⏱ " + String(v).replace(".", ",") + "x" + "</option>";
       }).join("");
       return '<div class="linha"><b>' + escapar(NOME_LANG_PT[l]) + '</b><select class="sel" data-voz="' + l + '">' + ops +
-        '</select><select class="sel" data-vel="' + l + '">' + velOps + '</select><button class="ico" type="button" data-testar="' + l + '">▶ testar</button></div>';
+        '</select><select class="sel" data-vel="' + l + '" aria-label="Velocidade em ' + escapar(NOME_LANG_PT[l]) + '">' + velOps + '</select><button class="ico" type="button" data-testar="' + l + '">▶ testar</button></div>';
     }).join("");
     var qtd = '<div class="linha"><b>⏬ páginas</b><select class="sel" id="qtd-guardar">' +
       [5, 10, 15, 20, 30].map(function (v) {
         return '<option value="' + v + '"' + (v === JANELA_GUARDAR ? " selected" : "") + ">" + v + " por vez</option>";
       }).join("") + "</select></div>";
     var salvar = '<div class="linha"><button class="btn primario" type="button" id="vozes-salvar" disabled>✓ Tudo salvo</button></div>';
-    el.innerHTML = vel + qtd + (html || '<div class="dica">Este aparelho não informou nenhuma voz.</div>') +
+    el.innerHTML = qtd + (html || '<div class="dica">Este aparelho não informou nenhuma voz.</div>') +
       '<div class="dica">Se uma voz sai picotada, escolha outra do mesmo idioma e toque em testar. Vozes marcadas “rede” dependem da internet e costumam falhar mais. Depois de mudar, toque em 💾 Salvar alterações: a escolha fica salva neste aparelho.</div>' + salvar;
     vozesPendente = false;
   }
