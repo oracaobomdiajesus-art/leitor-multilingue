@@ -1462,6 +1462,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     u.lang = langFala(v, l);
     if (v) u.voice = v;
     u.rate = obterVelocidade(l);
+    setStatus("Testando: " + (v ? v.name + " · idioma " + v.lang + " · " + (v.localService ? "no aparelho" : "rede") + " · id " + (v.voiceURI || "–") : "nenhuma voz escolhida") + " · pedido " + u.lang);
     speechSynthesis.speak(u);
   });
   $("btn-musica").addEventListener("click", function () {
