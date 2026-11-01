@@ -51,6 +51,7 @@ button { cursor: pointer; }
 .acoes-estante { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .btn { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 9px 14px; font-weight: 600; font-size: 14px; }
 .btn.primario { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+#vozes-salvar:disabled { opacity: .55; }
 .btn:disabled, .btn.ocupado { opacity: .55; cursor: default; pointer-events: none; }
 .seletor { position: relative; overflow: hidden; display: inline-block; cursor: pointer; }
 .seletor input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; }
@@ -1418,51 +1419,73 @@ body.com-tocador .estante { padding-bottom: 460px; }
       [5, 10, 15, 20, 30].map(function (v) {
         return '<option value="' + v + '"' + (v === JANELA_GUARDAR ? " selected" : "") + ">" + v + " por vez</option>";
       }).join("") + "</select></div>";
+    var salvar = '<div class="linha"><button class="btn primario" type="button" id="vozes-salvar" disabled>✓ Tudo salvo</button></div>';
     el.innerHTML = vel + qtd + (html || '<div class="dica">Este aparelho não informou nenhuma voz.</div>') +
-      '<div class="dica">Se uma voz sai picotada, escolha outra do mesmo idioma e toque em testar. Vozes marcadas “rede” dependem da internet e costumam falhar mais. A escolha fica salva neste aparelho.</div>';
+      '<div class="dica">Se uma voz sai picotada, escolha outra do mesmo idioma e toque em testar. Vozes marcadas “rede” dependem da internet e costumam falhar mais. Depois de mudar, toque em 💾 Salvar alterações: a escolha fica salva neste aparelho.</div>' + salvar;
+    vozesPendente = false;
   }
   var FRASE_TESTE = { pt: "Era uma vez um comerciante muito rico, que tinha seis filhos.", en: "Once upon a time there was a very rich merchant.",
     es: "Érase una vez un mercader muy rico.", fr: "Il était une fois un marchand très riche.", it: "C'era una volta un mercante molto ricco.", de: "Es war einmal ein sehr reicher Kaufmann.",
     nl: "Er was eens een heel rijke koopman.", ru: "Жил-был очень богатый купец.", he: "היה היה סוחר עשיר מאוד.", ar: "كان يا ما كان تاجر غني جدا.", ja: "昔々、とても裕福な商人がいました。", zh: "从前有一个非常富有的商人。", ko: "옛날에 아주 부유한 상인이 있었습니다." };
+  // As mudanças do painel ficam pendentes até tocar em "Salvar alterações".
+  // O ▶ testar já usa o que está escolhido no painel, mesmo antes de salvar.
+  var vozesPendente = false;
+  function marcarPendente(sim) {
+    vozesPendente = sim;
+    var b = $("vozes-salvar"); if (!b) return;
+    b.disabled = !sim;
+    b.textContent = sim ? "💾 Salvar alterações" : "✓ Tudo salvo";
+  }
+  function vozDoPainel(l) {
+    var s = document.querySelector('#painel-vozes [data-voz="' + l + '"]');
+    if (!s || !s.value) return vozPara(l);
+    var lista = vozesDe(l);
+    return lista.find(function (x) { return (x.voiceURI || x.name) === s.value; }) || vozPara(l);
+  }
+  function velDoPainel(l) {
+    var s = document.querySelector('#painel-vozes [data-vel="' + l + '"]');
+    return s ? parseFloat(s.value) || obterVelocidade(l) : obterVelocidade(l);
+  }
+  function salvarPainelVozes() {
+    var painel = $("painel-vozes"), ok = true;
+    function g(k, v) { gravarPref(k, v); if (lerPref(k, null) !== v) ok = false; }
+    var qtd = $("qtd-guardar");
+    if (qtd) { JANELA_GUARDAR = parseInt(qtd.value, 10) || 10; g("leitor.qtd5", String(JANELA_GUARDAR)); }
+    var vg = $("velocidade");
+    if (vg) { velocidade = parseFloat(vg.value) || 1; g("leitor.vel", String(velocidade)); }
+    painel.querySelectorAll("[data-vel]").forEach(function (sel) { g("leitor.vel." + sel.dataset.vel, sel.value); });
+    painel.querySelectorAll("[data-voz]").forEach(function (sel) {
+      var l = sel.dataset.voz;
+      g("leitor.voz." + l, sel.value);
+      var esc = sel.value ? vozesDe(l).find(function (x) { return (x.voiceURI || x.name) === sel.value; }) : null;
+      g("leitor.vozlang." + l, esc ? normLang(esc.lang) : "");
+    });
+    marcarPendente(false);
+    montarPainelVozes();
+    if (ok) setStatus("Vozes e velocidades salvas neste aparelho.");
+    else setStatus("O navegador não deixou salvar (modo anônimo ou armazenamento cheio?). As escolhas valem só até fechar a página.", "warn");
+    if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx);
+  }
   $("painel-vozes").addEventListener("change", function (ev) {
-    if (ev.target.id === "qtd-guardar") {
-      JANELA_GUARDAR = parseInt(ev.target.value, 10) || 10;
-      gravarPref("leitor.qtd5", String(JANELA_GUARDAR));
-      return;
-    }
     if (ev.target.id === "velocidade") {
-      velocidade = parseFloat(ev.target.value) || 1;
-      gravarPref("leitor.vel", String(velocidade));
-      // se estiver tocando, recomeca o paragrafo atual ja na nova velocidade
-      if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx);
-      return;
+      // a velocidade geral vale para todos os idiomas; depois dá para ajustar um a um
+      var val = ev.target.value;
+      $("painel-vozes").querySelectorAll("[data-vel]").forEach(function (sel) { sel.value = val; });
     }
-    var v = ev.target.closest("[data-vel]");
-    if (v) { gravarPref("leitor.vel." + v.dataset.vel, v.value); if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx); return; }
-    var s = ev.target.closest("[data-voz]");
-    if (s) {
-      var l = s.dataset.voz;
-      gravarPref("leitor.voz." + l, s.value);
-      var esc = s.value ? vozesDe(l).find(function (x) { return (x.voiceURI || x.name) === s.value; }) : null;
-      gravarPref("leitor.vozlang." + l, esc ? normLang(esc.lang) : "");
-      if (audio.estado === "tocando") pausar();
-      speechSynthesis.cancel();
-      montarPainelVozes();
-      var nova = vozPara(l);
-      setStatus("Voz de " + NOME_LANG_PT[l] + ": " + (nova ? nova.name + " (" + normLang(nova.lang) + ")" : "automática") + ". Toque em ▶ para ouvir com ela.");
-    }
+    if (ev.target.closest("select")) { marcarPendente(true); setStatus("Alterações ainda não salvas. Toque em 💾 Salvar alterações."); }
   });
   $("painel-vozes").addEventListener("click", function (ev) {
+    if (ev.target.closest("#vozes-salvar")) { salvarPainelVozes(); return; }
     var b = ev.target.closest("[data-testar]");
     if (!b || !window.speechSynthesis) return;
     if (audio.estado === "tocando") pausar();
     speechSynthesis.cancel();
     var l = b.dataset.testar, u = new SpeechSynthesisUtterance(FRASE_TESTE[l]);
-    var v = vozPara(l);
+    var v = vozDoPainel(l);
     u.lang = langFala(v, l);
     if (v) u.voice = v;
-    u.rate = obterVelocidade(l);
-    setStatus("Testando: " + (v ? v.name + " · idioma " + v.lang + " · " + (v.localService ? "no aparelho" : "rede") + " · id " + (v.voiceURI || "–") : "nenhuma voz escolhida") + " · pedido " + u.lang);
+    u.rate = velDoPainel(l);
+    setStatus("Testando: " + (v ? v.name + " · idioma " + v.lang + " · " + (v.localService ? "no aparelho" : "rede") : "nenhuma voz escolhida") + " · " + String(u.rate).replace(".", ",") + "x" + (vozesPendente ? " (ainda não salvo)" : ""));
     speechSynthesis.speak(u);
   });
   $("btn-musica").addEventListener("click", function () {
@@ -1731,7 +1754,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
   $("trad").addEventListener("click", aoTocarParagrafo);
   $("fixo").addEventListener("click", aoTocarParagrafo);
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () {
-    if (!$("painel-vozes").hidden) montarPainelVozes();
+    if (!$("painel-vozes").hidden && !vozesPendente) montarPainelVozes();
   };
 
   // ---------- Rolagem sincronizada (por paragrafo) ----------
