@@ -296,8 +296,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
         </select>
       </div>
       <div class="grupo">
-        <button class="ico" id="col1" type="button" title="Idiomas na tela" aria-label="Escolher quantos idiomas aparecem na tela">⇆</button>
-        <button class="ico" id="col3" type="button" aria-pressed="false" title="3ª coluna" aria-label="3ª coluna">Ⅲ</button>
+        <button class="ico" id="col1" type="button" title="Colunas na tela" aria-label="Escolher quantas colunas aparecem na tela">Ⅱ</button>
         <button class="ico" id="sync" type="button" aria-pressed="true" title="Rolagem junta" aria-label="Rolagem junta">⇅</button>
         <button class="ico" id="menor" type="button" aria-label="Diminuir letra">A−</button>
         <button class="ico" id="maior" type="button" aria-label="Aumentar letra">A+</button>
@@ -316,8 +315,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
         <span><b>‹ ›</b> página (ou capítulo) anterior / próxima</span>
         <span><b>Livro · Cap.</b> escolher livro e capítulo (Bíblia)</span>
         <span><b>Idioma</b> tradutor embutido (só no computador)</span>
-        <span><b>⇆</b> dois idiomas, só o original ou só a tradução</span>
-        <span><b>Ⅲ</b> mostrar/esconder a 3ª coluna</span>
+        <span><b>Ⅱ Ⅲ ① ②</b> colunas na tela: duas, três, só o original ou só a tradução (toque para trocar)</span>
         <span><b>⇅</b> rolagem junta (liga/desliga)</span>
         <span><b>A− A+</b> tamanho da letra</span>
         <span><b>🔁</b> leitura alternada: cada parágrafo em todos os idiomas, depois o próximo</span>
@@ -1353,6 +1351,14 @@ body.com-tocador .estante { padding-bottom: 460px; }
   // Vozes: o aparelho pode ter varias por idioma (Samsung, Google, rede...).
   // Algumas "picotam". A escolhida pela pessoa fica salva por idioma.
   function langDaVoz(v) { return String(v.lang || "").replace("_", "-").toLowerCase(); }
+  // Idioma que vai na fala. O Android ignora a voz escolhida se o idioma vier como "pt_PT"
+  // ou se as vozes ainda não carregaram; por isso vai sempre "pt-PT", e o idioma da voz
+  // escolhida fica salvo para valer mesmo antes de a lista de vozes chegar.
+  function normLang(l) { var p = String(l || "").replace("_", "-").split("-"); return p[0].toLowerCase() + (p[1] ? "-" + p[1].toUpperCase() : ""); }
+  function langFala(voz, lang) {
+    if (voz) return normLang(voz.lang);
+    return lerPref("leitor.vozlang." + lang, "") || VOZ_LANG[lang] || lang;
+  }
   function vozesDe(lang) {
     var base = (VOZ_LANG[lang] || lang).slice(0, 2).toLowerCase();
     var vozes = window.speechSynthesis ? speechSynthesis.getVoices() : [];
@@ -1434,7 +1440,17 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var v = ev.target.closest("[data-vel]");
     if (v) { gravarPref("leitor.vel." + v.dataset.vel, v.value); if (audio.estado === "tocando") tocarDe(audio.qual, audio.idx); return; }
     var s = ev.target.closest("[data-voz]");
-    if (s) { gravarPref("leitor.voz." + s.dataset.voz, s.value); if (audio.estado === "tocando") pausar(); }
+    if (s) {
+      var l = s.dataset.voz;
+      gravarPref("leitor.voz." + l, s.value);
+      var esc = s.value ? vozesDe(l).find(function (x) { return (x.voiceURI || x.name) === s.value; }) : null;
+      gravarPref("leitor.vozlang." + l, esc ? normLang(esc.lang) : "");
+      if (audio.estado === "tocando") pausar();
+      speechSynthesis.cancel();
+      montarPainelVozes();
+      var nova = vozPara(l);
+      setStatus("Voz de " + NOME_LANG_PT[l] + ": " + (nova ? nova.name + " (" + normLang(nova.lang) + ")" : "automática") + ". Toque em ▶ para ouvir com ela.");
+    }
   });
   $("painel-vozes").addEventListener("click", function (ev) {
     var b = ev.target.closest("[data-testar]");
@@ -1443,7 +1459,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
     speechSynthesis.cancel();
     var l = b.dataset.testar, u = new SpeechSynthesisUtterance(FRASE_TESTE[l]);
     var v = vozPara(l);
-    u.lang = v ? v.lang : (VOZ_LANG[l] || l);
+    u.lang = langFala(v, l);
     if (v) u.voice = v;
     u.rate = obterVelocidade(l);
     speechSynthesis.speak(u);
@@ -1539,7 +1555,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       if (off && audio.idx === idx) { ini = inicioDePalavra(txt, off); off = 0; }
       audio.ini = ini; audio.pos = ini; audio.t0 = Date.now(); audio.borda = false;
       var u = new SpeechSynthesisUtterance(txt.slice(ini));
-      u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
+      u.lang = langFala(voz, lang);
       if (voz) u.voice = voz;
       u.rate = obterVelocidade(lang);
       u.volume = falaVol;
@@ -1655,7 +1671,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       p.scrollIntoView({ block: "nearest" });
       var lang = idiomaDe(el.id), voz = vozPara(lang);
       var u = new SpeechSynthesisUtterance(textoFala(p));
-      u.lang = voz ? voz.lang : (VOZ_LANG[lang] || lang);
+      u.lang = langFala(voz, lang);
       if (voz) u.voice = voz;
       u.rate = obterVelocidade(lang);
       u.volume = falaVol;
@@ -1795,7 +1811,8 @@ body.com-tocador .estante { padding-bottom: 460px; }
 
   // Idiomas na tela: os dois, só o original ou só a tradução.
   var modoCol = lerPref("leitor.modoCol", "ambos");
-  var NOMES_MODO = { ambos: "Dois idiomas na tela", orig: "Só o original", trad: "Só a tradução" };
+  var NOMES_MODO = { ambos: "Duas colunas na tela", tres: "Três colunas na tela", orig: "Só o original", trad: "Só a tradução" };
+  function modoAtual() { return modoCol === "ambos" && col3Ligada ? "tres" : modoCol; }
   function aplicarModoCol() {
     var uma = modoCol === "orig" || modoCol === "trad";
     $("orig").parentNode.hidden = modoCol === "trad";
@@ -1803,23 +1820,28 @@ body.com-tocador .estante { padding-bottom: 460px; }
     $("janela-fixo").hidden = uma || !col3Ligada;
     document.querySelector(".janelas").classList.toggle("uma", uma);
     $("col1").dataset.modo = modoCol;
-    $("col1").textContent = modoCol === "orig" ? "①" : modoCol === "trad" ? "②" : "⇆";
-    $("col1").title = NOMES_MODO[modoCol] + " (toque para trocar)";
-    $("col3").disabled = uma;
+    var m = modoAtual();
+    $("col1").textContent = m === "orig" ? "①" : m === "trad" ? "②" : m === "tres" ? "Ⅲ" : "Ⅱ";
+    $("col1").title = NOMES_MODO[m] + " (toque para trocar)";
     agendarAlinhar();
   }
   $("col1").addEventListener("click", function () {
-    modoCol = modoCol === "ambos" ? "orig" : modoCol === "orig" ? "trad" : "ambos";
+    // ciclo: duas colunas → três colunas → só o original → só a tradução → duas colunas
+    var m = modoAtual();
+    if (m === "ambos") { col3Ligada = true; }
+    else if (m === "tres") { col3Ligada = false; modoCol = "orig"; }
+    else if (m === "orig") { modoCol = "trad"; }
+    else { modoCol = "ambos"; col3Ligada = false; }
     gravarPref("leitor.modoCol", modoCol);
+    gravarPref("leitor.col3", col3Ligada ? "1" : "0");
     if (audio.qual && janelasVisiveis().map(function (e) { return e.id; }).indexOf(audio.qual) < 0) pararAudio();
+    aplicarCol3();
     aplicarModoCol();
-    setStatus(NOMES_MODO[modoCol] + ".");
+    setStatus(NOMES_MODO[modoAtual()] + ".");
   });
   function aplicarCol3() {
     $("janela-fixo").hidden = !col3Ligada || modoCol === "orig" || modoCol === "trad";
     document.querySelector(".janelas").classList.toggle("tres", col3Ligada);
-    $("col3").setAttribute("aria-pressed", col3Ligada ? "true" : "false");
-    $("col3").title = col3Ligada ? "Esconder a 3ª coluna" : "Mostrar a 3ª coluna";
     agendarAlinhar();
   }
   function pintarFixo(dado) {
@@ -1850,12 +1872,6 @@ body.com-tocador .estante { padding-bottom: 460px; }
     if (blocos.length < 2) blocos = t.split(/\n/);
     return blocos.map(function (b) { return b.replace(/\s+/g, " ").trim(); }).filter(Boolean);
   }
-  $("col3").addEventListener("click", function () {
-    col3Ligada = !col3Ligada;
-    gravarPref("leitor.col3", col3Ligada ? "1" : "0");
-    if (!col3Ligada && audio.qual === "fixo") pararAudio();
-    aplicarCol3();
-  });
   $("trazer").addEventListener("click", async function () {
     if (!pareceTraduzido()) {
       setStatus("A coluna do meio ainda está em português. Traduza pelo Chrome (⋮ → Traduzir…) e toque de novo em 📋.", "warn");
@@ -2078,7 +2094,7 @@ body.com-tocador .estante { padding-bottom: 460px; }
       }
       marcaGuardar("✓");
       if (langFinal) { $("idioma3").value = langFinal; gravarPref("leitor.idioma3", langFinal); }
-      if (!col3Ligada) { col3Ligada = true; gravarPref("leitor.col3", "1"); aplicarCol3(); }
+      if (!col3Ligada) { col3Ligada = true; gravarPref("leitor.col3", "1"); aplicarCol3(); aplicarModoCol(); }
       await carregarFixo();
       setStatus("⏬ Páginas " + inicio + " a " + fim + " na 3ª coluna" + (langFinal ? " (" + (NOME_LANG_PT[langFinal] || langFinal) + ")" : "") + ". Agora pode trocar o idioma do Chrome.", "ok");
     } finally {
