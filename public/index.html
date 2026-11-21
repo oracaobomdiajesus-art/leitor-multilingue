@@ -104,7 +104,6 @@ select.sel { height: 36px; border: 1px solid var(--line); border-radius: 8px; ba
 .bib select.sel { max-width: 150px; }
 body.modo-biblia #num, body.modo-biblia #total { display: none; }
 body.modo-aula .pag { display: none; }
-.livro.aula .lombada { background: var(--accent); }
 .livro.oracao .lombada { background: var(--ok); }
 .grupo-oracoes { display: flex; flex-direction: column; gap: 8px; }
 .abas-estante { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
@@ -462,23 +461,15 @@ body.com-tocador .estante { padding-bottom: 460px; }
   function gravarPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   // ---------- Estante ----------
-  // ---------- Aula ao vivo (aula.json publicado no site) ----------
-  var aulaAtual = null;
+  // ---------- Texto publicado no site (orações) ----------
   async function carregarAula(url) {
     try {
-      var r = await fetch(url || "aula.json", { cache: "no-store" });
+      var r = await fetch(url, { cache: "no-store" });
       if (!r.ok) return null;
       var d = await r.json();
       if (!d || !Array.isArray(d.paragrafos) || !d.paragrafos.length) return null;
       return d;
     } catch (e) { return null; }
-  }
-  function cartaoAula() {
-    if (!aulaAtual) return "";
-    return '<button class="livro aula" type="button" data-id="aula"><span class="lombada"></span>' +
-      '<span class="info"><span class="titulo">🎓 Aula ao vivo · ' + escapar(aulaAtual.titulo || "") + '</span>' +
-      '<span class="meta">' + (aulaAtual.data ? dataCurta(aulaAtual.data + "T12:00:00") + " · " : "") +
-      aulaAtual.paragrafos.length + " parágrafos</span></span></button>";
   }
 
   // ---------- Orações (oracoes/indice.json publicado no site) ----------
@@ -1016,7 +1007,6 @@ body.com-tocador .estante { padding-bottom: 460px; }
     var b = ev.target.closest(".livro");
     if (!b) return;
     if (b.dataset.oracao) { var o = oracoes.find(function (x) { return x.arquivo === b.dataset.oracao; }) || {}; abrirLivro({ id: "aula", aula: true, fonte: "oracoes/" + b.dataset.oracao, dados: { titulo: o.titulo || "Oração" } }); return; }
-    if (b.dataset.id === "aula") { abrirLivro({ id: "aula", aula: true, dados: { titulo: aulaAtual ? aulaAtual.titulo : "Aula" } }); return; }
     var l = livros.find(function (x) { return x.id === b.dataset.id; });
     if (l) abrirLivro(l);
   });
@@ -1065,9 +1055,8 @@ body.com-tocador .estante { padding-bottom: 460px; }
     try {
       var buf = l.aula ? null : await idbGet("pdfs", l.id);
       if (l.aula) {
-        var au = l.fonte ? await carregarAula(l.fonte) : ((await carregarAula()) || aulaAtual);
-        if (!au) throw new Error(l.fonte ? "a oração não está disponível agora" : "a aula não está disponível agora");
-        if (!l.fonte) aulaAtual = au;
+        var au = await carregarAula(l.fonte);
+        if (!au) throw new Error("a oração não está disponível agora");
         atual = { id: (l.fonte ? "oracao-" : "aula-") + (au.data || "") + "-" + (au.titulo || "").length + "-" + au.paragrafos.length, chave: l.fonte || ("aula-" + (au.data || "") + "-" + (au.titulo || "")), aula: true, dados: { titulo: au.titulo }, paras: au.paragrafos, trilhas: au.trilhas || null,
           subs: (au.subetapas || []).reduce(function (m, x) { m[x.i] = x.nome + (x.refs && x.refs.length ? " · " + x.refs.join("; ") : ""); return m; }, {}) };
         if (!tocando) { mus.trilhas = atual.trilhas; mus.idAuto = ""; var pc = partesComTrilha(atual.paras, atual.trilhas); if (pc.length) musTrocarPara(pc[0].musica); }
@@ -2156,7 +2145,6 @@ body.com-tocador .estante { padding-bottom: 460px; }
     $("tela-estante").hidden = false;
     document.body.classList.remove("modo-biblia");
     document.body.classList.remove("modo-aula");
-    carregarAula().then(function (a) { aulaAtual = a; renderEstante(); });
     carregarOracoes().then(async function (o) { oracoes = o; await carregarGravsOracoes(); renderEstante(); });
     definirIdiomaOriginal("pt");
   });
@@ -2412,7 +2400,6 @@ body.com-tocador .estante { padding-bottom: 460px; }
     try { livros = JSON.parse(lerPref("leitor.livros", "[]")) || []; } catch (e) { livros = []; }
     renderEstante();
     await migrarGravacoes();
-    aulaAtual = await carregarAula();
     oracoes = await carregarOracoes();
     await carregarGravsOracoes();
     await carregarMusicas();
