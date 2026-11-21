@@ -57,6 +57,10 @@ button { cursor: pointer; }
 .seletor input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; }
 .livros { display: flex; flex-direction: column; gap: 10px; }
 .livro { display: flex; gap: 14px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px; text-align: left; width: 100%; }
+.livro-wrap { display: flex; gap: 8px; align-items: stretch; }
+.livro-wrap > .livro { flex: 1; min-width: 0; width: auto; }
+.livro-del { flex: none; min-width: 48px; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; font-size: 18px; padding: 0 10px; cursor: pointer; }
+.livro-del.confirma { background: #b3261e; border-color: #b3261e; color: #fff; font-size: 13px; font-weight: 600; }
 .livro .lombada { width: 8px; align-self: stretch; border-radius: 4px; background: var(--accent); flex: none; }
 .livro .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .livro .titulo { font-family: var(--font-read); font-weight: 600; font-size: 17px; }
@@ -994,16 +998,43 @@ body.com-tocador .estante { padding-bottom: 460px; }
     el.innerHTML = livros.map(function (l) {
       var d = l.dados, tot = d.totalPaginas || 0, pg = d.paginaAtual || 1;
       var pct = tot ? Math.round((pg / tot) * 100) : 0;
-      return '<button class="livro" type="button" data-id="' + escapar(l.id) + '">' +
+      var conf = apagarLivro === l.id;
+      return '<div class="livro-wrap"><button class="livro" type="button" data-id="' + escapar(l.id) + '">' +
         '<span class="lombada"></span>' +
         '<span class="info"><span class="titulo">' + escapar(d.titulo || "Sem título") + '</span>' +
         '<span class="meta">' + (d.tipo === "biblia" ? "Capítulo " : "Página ") + pg + (tot ? " de " + tot + " · " + pct + "%" : "") +
         (d.ultimaLeitura ? " · última leitura " + dataCurta(d.ultimaLeitura) : "") + '</span>' +
-        '<span class="barra"><i style="width:' + pct + '%"></i></span></span></button>';
+        '<span class="barra"><i style="width:' + pct + '%"></i></span></span></button>' +
+        '<button class="livro-del' + (conf ? ' confirma' : '') + '" type="button" data-del="' + escapar(l.id) + '" title="Excluir este arquivo" aria-label="Excluir ' + escapar(d.titulo || "arquivo") + '">' + (conf ? "Excluir?" : "🗑") + '</button></div>';
     }).join("");
   }
 
+  // Excluir arquivo da estante: 1º toque pede confirmação, 2º toque apaga do aparelho.
+  var apagarLivro = null;
+  async function excluirLivro(id) {
+    if (idb) {
+      try { await idbDel("pdfs", id); } catch (e) {}
+      try {
+        await new Promise(function (ok) {
+          var t = idb.transaction("traducoes", "readwrite"), r = t.objectStore("traducoes").openCursor();
+          r.onsuccess = function () { var c = r.result; if (!c) return; if (String(c.key).indexOf(id + "_") === 0) c.delete(); c.continue(); };
+          t.oncomplete = ok; t.onerror = ok;
+        });
+      } catch (e) {}
+    }
+    livros = livros.filter(function (x) { return x.id !== id; });
+    gravarLivros();
+    var m = $("upload-msg"); if (m) m.textContent = "Arquivo excluído deste aparelho.";
+  }
   $("lista").addEventListener("click", function (ev) {
+    var bd = ev.target.closest("[data-del]");
+    if (bd) {
+      var idd = bd.dataset.del;
+      if (apagarLivro === idd) { apagarLivro = null; excluirLivro(idd); }
+      else { apagarLivro = idd; renderEstante(); }
+      return;
+    }
+    if (apagarLivro) { apagarLivro = null; renderEstante(); }
     var b = ev.target.closest(".livro");
     if (!b) return;
     if (b.dataset.oracao) { var o = oracoes.find(function (x) { return x.arquivo === b.dataset.oracao; }) || {}; abrirLivro({ id: "aula", aula: true, fonte: "oracoes/" + b.dataset.oracao, dados: { titulo: o.titulo || "Oração" } }); return; }
